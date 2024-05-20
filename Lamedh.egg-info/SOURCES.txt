@@ -1,0 +1,15 @@
+setup.py
+Lamedh.egg-info/PKG-INFO
+Lamedh.egg-info/SOURCES.txt
+Lamedh.egg-info/dependency_links.txt
+Lamedh.egg-info/requires.txt
+Lamedh.egg-info/top_level.txt
+lamedh/__init__.py
+lamedh/expr.py
+lamedh/visitors.py
+lamedh/parsing/__init__.py
+lamedh/parsing/parsing.py
+tests/__init__.py
+tests/test_eval_normal.py
+tests/test_lambda_expr.py
+tests/test_parsing.py
