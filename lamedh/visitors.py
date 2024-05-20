@@ -147,18 +147,3 @@ def var_name_generator_numerical(orig_name):
         yield next_name
 
 
-def var_name_generator_lexical_order():
-    pool = string.ascii_letters
-    length = 1
-    prevs = defaultdict(list)
-    while True:
-        for c in pool:
-            if (length - 1) in prevs:
-                prevs_list = prevs[length - 1]
-                for p in prevs_list:
-                    prevs[length].append(c+p)
-                    yield c+p
-            else:
-                prevs[length].append(c)
-                yield c
-        length += 1
