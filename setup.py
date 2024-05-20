@@ -8,5 +8,6 @@ setup(
     author_email='javimansilla@gmail.com',
     description='Lambda Reduction and Evaluation',
     packages=find_packages(),
+    scripts=['bin/lamedh'],
     install_requires=['parsimonious>=0.10'],
 )
