@@ -96,6 +96,9 @@ class Var(Expr):
         self.var_name = name
 
     def __repr__(self):
+        return f'<Var {self.var_name}>'
+
+    def __str__(self):
         return self.var_name
 
     def rename(self, new_name):
@@ -115,6 +118,9 @@ class Lam(Expr):
 
     def __repr__(self):
         return f'(λ{self.var_name}.{self.body})'
+
+    def __str__(self):
+        return f'Lam(λ{self.var_name}.{repr(self.body)})'
 
     def children(self):
         return [self.body]
@@ -149,6 +155,9 @@ class App(Expr):
         return [self.operator, self.operand]
 
     def __repr__(self):
+        return f'App({repr(self.operator)} {repr(self.operand)})'
+
+    def __str__(self):
         return f'({self.operator} {self.operand})'
 
     def is_redex(self):
