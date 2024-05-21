@@ -30,14 +30,14 @@ class Terminal:
     def __init__(self):
         self.memory = {}
         self.formatters = {
-            'normal': DefaultFormatter(),
+            'normal': NormalFormatter(),
             'pretty': PrettyFormatter(),
             'clean': CleanFormatter()
         }
 
     @property
     def formatter(self):
-        default = self.formatters['clean']
+        default = self.formatters['pretty']
         name = str(self.memory.get('FORMAT', None))
         return self.formatters.get(name, default)
 
@@ -166,7 +166,7 @@ class Terminal:
         print("Type ? for help.")
 
 
-class DefaultFormatter:
+class NormalFormatter:
 
     def __call__(self, expr):
         return str(expr)
@@ -179,7 +179,7 @@ class DefaultFormatter:
         return msg
 
 
-class CleanFormatter(DefaultFormatter):
+class CleanFormatter(NormalFormatter):
 
     def __call__(self, expr):
         txt = str(expr)
