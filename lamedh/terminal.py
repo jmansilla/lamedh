@@ -29,7 +29,17 @@ class Terminal:
 
     def __init__(self):
         self.memory = {}
-        self.formatter = PrettyFormatter()
+        self.formatters = {
+            'normal': DefaultFormatter(),
+            'pretty': PrettyFormatter(),
+            'clean': CleanFormatter()
+        }
+
+    @property
+    def formatter(self):
+        default = self.formatters['normal']
+        name = str(self.memory.get('FORMAT', None))
+        return self.formatters.get(name, default)
 
     def main(self):
         self.greetings()
@@ -150,6 +160,71 @@ class Terminal:
         print("Type ? for help.")
 
 
+class DefaultFormatter:
+
+    def __call__(self, expr):
+        return str(expr)
+
+    def justify_till_end(self, msg, gap):
+        columns, _ = os.get_terminal_size()
+        length = len(msg)
+        if length < (columns - gap):
+            msg += ' ' * (columns - gap - length)
+        return msg
+
+
+class CleanFormatter(DefaultFormatter):
+
+    def __call__(self, expr):
+        txt = str(expr)
+        # let's minimize the number of parentheses
+        open_par = txt.count('(')
+        assert open_par == txt.count(')')  # sanity check only
+        removals = 0
+        for i in range(open_par):
+            new_txt = self.remove_pair_parentheses(txt, i - removals)
+            try:
+                parsed = Expr.from_string(new_txt)
+            except Exception as e:
+                parsed = None
+            if repr(parsed) == repr(expr):
+                # success
+                txt = new_txt
+                removals += 1
+        return txt.strip()
+
+    def find_nth(self, txt, key, idx=0):
+        # find the nth occurrence of key in txt. Key is single character
+        assert len(key) == 1
+        length = 1
+        i = -length
+        for c in range(idx + 1):
+            i = txt.find(key, i + length)
+            if i < 0:
+                break
+        return i
+
+    def remove_pair_parentheses(self, txt, open_idx):
+        prefix = txt[:open_idx]
+        suffix = txt[open_idx+1:]
+        still_open = prefix.count('(') - prefix.count(')')
+        new_suffix = ''
+        found = False
+        for c in suffix:
+            if c == '(' and not found:
+                still_open += 1
+                new_suffix += c
+            elif c == ')' and not found:
+                still_open -= 1
+                if still_open > 0:
+                    new_suffix += c
+                else:
+                    found = True
+            else:
+                new_suffix += c
+        return prefix + new_suffix
+
+
 class PrettyFormatter:
 
     PINK = '\033[95m'
@@ -175,9 +250,8 @@ class PrettyFormatter:
         idx = self.colors.index(respect_to)
         return self.colors[(idx - 1) % len(self.colors)]
 
-    def __call__(self, txt):
-        if not isinstance(txt, str):
-            txt = str(txt)
+    def __call__(self, expr):
+        txt = str(expr)
         current_color = self.colors[0]
         result = '' + current_color
         for i, c in enumerate(txt):
@@ -191,7 +265,7 @@ class PrettyFormatter:
                 result += c
         return result
 
-    def ljust(self, msg, gap):
+    def justify_till_end(self, msg, gap):
         columns, _ = os.get_terminal_size()
         length = len(re.subn('\\x1b.*?m', '', msg)[0])
         if length < (columns - gap):

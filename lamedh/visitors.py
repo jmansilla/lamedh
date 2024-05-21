@@ -148,7 +148,7 @@ class EvalNormalVisitor(BaseVisitor):
             msg += ' =N=> ' + self.format(success)
 
         if explanation:
-            msg = self.formatter.ljust(msg, gap=40)
+            msg = self.formatter.justify_till_end(msg, gap=40)
             msg += ' ' + explanation
         print(msg)
 
