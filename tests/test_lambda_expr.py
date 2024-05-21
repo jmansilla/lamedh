@@ -163,9 +163,19 @@ class TestRedexes(unittest.TestCase):
         zyx = Expr.from_string('λz.λx.λy.((z y) x)')
         zwz = Expr.from_string('(λz.λw.z)')
         expr = App(App(ffx, zyx), zwz)
-        normal = expr.goto_normal()
-        self.assertTrue(normal.is_normal())
-        self.assertEqual(str(normal), '(λx1.(λy.x1))')
+        normal_form = expr.goto_normal_form()
+        self.assertTrue(normal_form.is_normal_form())
+        self.assertEqual(str(normal_form), '(λx1.(λy.x1))')
+
+    def test_eval_normal_form(self):
+        ffx = Expr.from_string('(λf.λx.(f (f x)))')
+        zyx = Expr.from_string('λz.λx.λy.((z y) x)')
+        zwz = Expr.from_string('(λz.λw.z)')
+        expr = App(App(ffx, zyx), zwz)
+        print()
+        normal_can = expr.evalN(100, verbose=True)
+        self.assertTrue(normal_can.is_canonical())
+        print (normal_can)
 
 
 if __name__ == '__main__':
