@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from lamedh.visitors import FreeVarVisitor, BoundVarVisitor, SubstituteVisitor, RedicesVisitor
+from lamedh.visitors import FreeVarVisitor, BoundVarVisitor, SubstituteVisitor, RedicesVisitor, EvalNormalVisitor
 
 
 class StopEvaluation(Exception):
@@ -46,7 +46,7 @@ class Expr:
         root = self.goto_root()
         return RedicesVisitor().visit(root)
 
-    def is_normal(self):
+    def is_normal_form(self):
         return len(self.get_redices()) == 0
 
     def is_canonical(self):
@@ -55,6 +55,10 @@ class Expr:
 
     def reduce(self):
         raise CantReduceException()
+
+    def substitute(self, substitution_map):
+        substituted = SubstituteVisitor().visit(self, substitution_map)
+        return substituted
 
     def goto_canonical(self, max_steps=10, verbose=False):
         root = self.goto_root().clone()
@@ -70,14 +74,14 @@ class Expr:
                 print(root)
         return root
 
-    def goto_normal(self, max_steps=10, verbose=False):
+    def goto_normal_form(self, max_steps=10, verbose=False):
         step = 0
         def show(expr):
-            print('step', step, '->', expr, '    ', len(expr.get_redices()))
+            print('step', step, '->', expr, '    %s redices' % len(expr.get_redices()))
         root = self.goto_root().clone()
         if verbose:
             show(root)
-        while not root.is_normal() and step < max_steps:
+        while not root.is_normal_form() and step < max_steps:
             redices = root.get_redices()
             if not redices:
                 raise CantReduceToCanonicalException
@@ -87,6 +91,9 @@ class Expr:
             if verbose:
                 show(root)
         return root
+
+    def evalN(self, max_steps=10, verbose=False):
+        return EvalNormalVisitor(max_steps=max_steps, verbose=verbose).visit(self, '')
 
 
 class Var(Expr):
@@ -117,10 +124,10 @@ class Lam(Expr):
         self.body.parent = self
 
     def __repr__(self):
-        return f'(λ{self.var_name}.{self.body})'
+        return f'Lam(λ{self.var_name}.{repr(self.body)})'
 
     def __str__(self):
-        return f'Lam(λ{self.var_name}.{repr(self.body)})'
+        return f'(λ{self.var_name}.{self.body})'
 
     def children(self):
         return [self.body]
@@ -180,7 +187,7 @@ class App(Expr):
         lam = self.operator
         arg = self.operand
         mapping = {lam.var_name: arg.clone()}
-        substituted = SubstituteVisitor().visit(lam.body, mapping)
+        substituted = lam.body.substitute(mapping)
 
         if self.parent:
             self.parent.replace_child(self, substituted)
