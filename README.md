@@ -20,7 +20,8 @@ To open the interactive `lamedh` console on your terminal, simply type
 ```
 lamedh
 ```
-![output](https://github.com/jmansilla/lamedh/assets/488675/0aca5e95-3175-40df-be88-9c07d05d278b)
+![faster](https://github.com/jmansilla/lamedh/assets/488675/c5e52d19-b248-43b9-a125-7abb35966c71)
+
 
 
 
