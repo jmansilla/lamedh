@@ -1,6 +1,5 @@
-from collections import defaultdict
 from copy import copy
-import string
+import re
 
 
 class VisitError(Exception):
@@ -123,9 +122,26 @@ class EvalNormalVisitor(BaseVisitor):
         else:
             return str(expr)
 
-    def show(self, expr, breadcrumbs, success=''):
-        print(breadcrumbs.ljust(8), 'step', '%s/%s'.ljust(8) % (self.steps, self.max_steps),
-              '->', self.format(expr))
+    def show(self, expr, breadcrumbs, success='', explanation=''):
+        msg = breadcrumbs.ljust(7) + 'step '
+        msg += '%s/%s'.rjust(7) % (self.steps, self.max_steps)
+
+        if '(t)' in breadcrumbs:
+            indent = indent = '| ' * (len(breadcrumbs) - 3)
+        else:
+            indent = '| ' * len(breadcrumbs)
+
+        msg += ' -> ' + indent + self.format(expr)
+        if success:
+            msg += ' =N=> ' + self.format(success)
+
+        if explanation:
+            # hand made ljust, because coloring breaks it
+            length = len(re.subn('\\x1b.*?m', '', msg)[0])
+            if length < 80:
+                msg += ' ' * (80 - length)
+            msg += ' ' + explanation
+        print(msg)
 
     def visit(self, expr, *args, **kwargs):
         visit_method_name = 'visit_' + type(expr).__name__.lower()
@@ -133,11 +149,11 @@ class EvalNormalVisitor(BaseVisitor):
         return method(expr, *args, **kwargs)
 
     def visit_var(self, expr, breadcrumbs):
-        from lamedh.expr import CantEvalException
-        raise CantEvalException()
+        from lamedh.expr import CantEvalException  # type: ignore
+        raise CantEvalException('Cant evaluate variable %s' % repr(expr))
 
     def _register_step(self):
-        from lamedh.expr import StopEvaluation
+        from lamedh.expr import StopEvaluation  # type: ignore
         if self.steps >= self.max_steps:
             raise StopEvaluation()
         self.steps += 1
@@ -145,24 +161,27 @@ class EvalNormalVisitor(BaseVisitor):
     def visit_lam(self, expr, breadcrumbs):
         self._register_step()
         if self.verbose:
-            self.show(expr, breadcrumbs, success=expr)
+            self.show(expr, breadcrumbs, success='...', explanation="Abs rule")
         return expr
 
     def visit_app(self, expr, breadcrumbs):
         self._register_step()
         if self.verbose:
-            self.show(expr, breadcrumbs)
+            self.show(expr, breadcrumbs,
+                      explanation="App rule. Two children: %s & %s" % tuple(breadcrumbs+c for c in 'ab'))
         e1 = expr.operator.clone()
         e2 = expr.operand.clone()
         e1.parent = None
         e2.parent = None
         e1_canonic_form = self.visit(e1, breadcrumbs + 'a')
         if not e1_canonic_form.is_canonical():
-            from lamedh.expr import CantEvalException
+            from lamedh.expr import CantEvalException  # type: ignore
             raise CantEvalException()
         mapping = {e1_canonic_form.var_name: e2}
         new_e = e1_canonic_form.body.substitute(mapping)
-        return self.visit(new_e, breadcrumbs + 'b')
+        branch_b = self.visit(new_e, breadcrumbs + 'b')
+        self.show('', breadcrumbs + '(t)', success=branch_b, explanation="Finished " + breadcrumbs)
+        return branch_b
 
 
 class RedicesVisitor(BaseVisitor):
