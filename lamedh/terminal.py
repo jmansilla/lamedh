@@ -1,9 +1,11 @@
+import atexit
+import os
+import re
+import readline
+
 from lamedh.expr import Expr
 from lamedh.visitors import SubstituteVisitor
 
-import atexit
-import os
-import readline
 
 histfile = os.path.join(os.path.expanduser("~"), ".lamedh_history")
 try:
@@ -188,3 +190,10 @@ class PrettyFormatter:
             else:
                 result += c
         return result
+
+    def ljust(self, msg, gap):
+        columns, _ = os.get_terminal_size()
+        length = len(re.subn('\\x1b.*?m', '', msg)[0])
+        if length < (columns - gap):
+            msg += ' ' * (columns - gap - length)
+        return msg

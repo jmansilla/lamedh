@@ -1,5 +1,4 @@
 from copy import copy
-import re
 
 
 class VisitError(Exception):
@@ -149,10 +148,7 @@ class EvalNormalVisitor(BaseVisitor):
             msg += ' =N=> ' + self.format(success)
 
         if explanation:
-            # hand made ljust, because coloring breaks it
-            length = len(re.subn('\\x1b.*?m', '', msg)[0])
-            if length < 80:
-                msg += ' ' * (80 - length)
+            msg = self.formatter.ljust(msg, gap=40)
             msg += ' ' + explanation
         print(msg)
 
