@@ -110,14 +110,22 @@ class SubstituteVisitor(BaseVisitor):
 
 class EvalNormalVisitor(BaseVisitor):
 
-    def __init__(self, max_steps, verbose=False) -> None:
+    def __init__(self, max_steps, verbose=False, formatter=None) -> None:
         super().__init__()
         self.steps = 0
         self.max_steps = max_steps
         self.verbose = verbose
+        self.formatter = formatter
+
+    def format(self, expr):
+        if self.formatter:
+            return self.formatter(expr)
+        else:
+            return str(expr)
 
     def show(self, expr, breadcrumbs, success=''):
-        print(breadcrumbs.ljust(8), 'step', '%s/%s'.ljust(8) % (self.steps, self.max_steps), '->', expr)
+        print(breadcrumbs.ljust(8), 'step', '%s/%s'.ljust(8) % (self.steps, self.max_steps),
+              '->', self.format(expr))
 
     def visit(self, expr, *args, **kwargs):
         visit_method_name = 'visit_' + type(expr).__name__.lower()

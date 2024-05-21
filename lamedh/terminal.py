@@ -81,7 +81,7 @@ class Terminal:
             except Exception as e:
                 print("Parsing Lambda Expr Error: %s" % e)
                 return
-            print('new expression parsed:', parsed)
+            print('new expression parsed:', self.formatter(parsed))
             self.memory[new_name] = parsed
 
     def process_operation(self, new_name, raw_expr):
@@ -117,12 +117,12 @@ class Terminal:
                     # Let's execute the operation
                     print(self.OUT)
                     try:
-                        new_expr = func(max_steps=max_steps, verbose=1)
+                        new_expr = func(max_steps=max_steps, verbose=1, formatter=self.formatter)
                     except Exception as e:
                         print("Error occured when running operation '%s': %s" % (prefix, type(e).__name__))
                         print(e)
                         return
-                    print(self.OUT, new_expr)
+                    print(self.OUT, self.formatter(new_expr))
                     self.memory[new_name] = new_expr
                     return
             print("Error: unknown operation: '%s' Type '?' for help" % operation)
@@ -150,18 +150,18 @@ class Terminal:
 
 class PrettyFormatter:
 
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
+    PINK = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    WHITE = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
     def __init__(self):
-        self.colors = [self.ENDC, self.HEADER, self.OKBLUE, self.OKCYAN, self.OKGREEN, self.WARNING, self.FAIL]
+        self.colors = [self.WHITE, self.PINK, self.BLUE, self.RED, self.CYAN, self.GREEN, self.YELLOW]
 
     def next_color(self, respect_to):
         assert respect_to in self.colors

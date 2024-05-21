@@ -74,10 +74,11 @@ class Expr:
                 print(root)
         return root
 
-    def goto_normal_form(self, max_steps=10, verbose=False):
+    def goto_normal_form(self, max_steps=10, verbose=False, **kwargs):
         step = 0
         def show(expr):
-            print('step', step, '->', expr, '    %s redices' % len(expr.get_redices()))
+            str_expr = kwargs.get('formatter', str)(expr)
+            print('step', step, '->', str_expr, '    %s redices' % len(expr.get_redices()))
         root = self.goto_root().clone()
         if verbose:
             show(root)
@@ -92,8 +93,9 @@ class Expr:
                 show(root)
         return root
 
-    def evalN(self, max_steps=10, verbose=False):
-        return EvalNormalVisitor(max_steps=max_steps, verbose=verbose).visit(self, '')
+    def evalN(self, max_steps=10, verbose=False, **kwargs):
+        visitor = EvalNormalVisitor(max_steps=max_steps, verbose=verbose, **kwargs)
+        return visitor.visit(self, '')
 
 
 class Var(Expr):
