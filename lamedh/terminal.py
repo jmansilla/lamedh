@@ -37,7 +37,7 @@ class Terminal:
 
     @property
     def formatter(self):
-        default = self.formatters['normal']
+        default = self.formatters['clean']
         name = str(self.memory.get('FORMAT', None))
         return self.formatters.get(name, default)
 
@@ -154,6 +154,12 @@ class Terminal:
         print("     Instead of λx.λy.xyz you must write λx.λy.((x y) z)")
         print("   - expressions ARE NOT reduced/evaluated inplace, they are cloned, in order to")
         print("     save the result, type: <new_name> = <name> -> <operation>")
+        print("")
+        print("   - To smooth reading λ-expressions with naked eye, you can try different formatters.")
+        print("     To change formatter, type in λ-Lamedh Terminal FORMAT=<formatter>, were options are:")
+        print("       - normal   (all parentheses you can get)")
+        print("       - pretty   (same than normal, but colored)")
+        print("       - clean    (the minimal amount of parentheses our parser supports)")
 
     def greetings(self):
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
