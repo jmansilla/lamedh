@@ -1,6 +1,7 @@
 from copy import deepcopy
 
-from lamedh.visitors import FreeVarVisitor, BoundVarVisitor, SubstituteVisitor, RedicesVisitor, EvalNormalVisitor
+from lamedh.visitors import FreeVarVisitor, BoundVarVisitor, SubstituteVisitor, RedicesVisitor
+from lamedh.visitors import EvalNormalVisitor, EvalEagerVisitor
 
 
 class StopEvaluation(Exception):
@@ -60,7 +61,7 @@ class Expr:
         substituted = SubstituteVisitor().visit(self, substitution_map)
         return substituted
 
-    def goto_canonical(self, max_steps=10, verbose=False):
+    def goto_canonical(self, max_steps=25, verbose=False):
         root = self.goto_root().clone()
         step = 0
         while not root.is_canonical() and step < max_steps:
@@ -74,7 +75,7 @@ class Expr:
                 print(root)
         return root
 
-    def goto_normal_form(self, max_steps=10, verbose=False, **kwargs):
+    def goto_normal_form(self, max_steps=25, verbose=False, **kwargs):
         step = 0
         def show(expr):
             str_expr = kwargs.get('formatter', str)(expr)
@@ -93,14 +94,13 @@ class Expr:
                 show(root)
         return root
 
-    def evalN(self, max_steps=10, verbose=False, **kwargs):
+    def evalN(self, max_steps=25, verbose=False, **kwargs):
         visitor = EvalNormalVisitor(max_steps=max_steps, verbose=verbose, **kwargs)
         return visitor.visit(self, '')
 
-    def evalE(self, max_steps=10, verbose=False, **kwargs):
-        raise NotImplementedError()
-        # visitor = EvalEagerVisitor(max_steps=max_steps, verbose=verbose, **kwargs)
-        # return visitor.visit(self, '')
+    def evalE(self, max_steps=25, verbose=False, **kwargs):
+        visitor = EvalEagerVisitor(max_steps=max_steps, verbose=verbose, **kwargs)
+        return visitor.visit(self, '')
 
 
 class Var(Expr):

@@ -116,8 +116,9 @@ class SubstituteVisitor(BaseVisitor):
         Lam_ = expr.__class__
         return Lam_(expr.var_name, new_body)
 
-class EvalNormalVisitor(BaseVisitor):
+class EvalVisitor(BaseVisitor):
     provide_children = False
+    ARROW = ' ???> '
 
     def __init__(self, max_steps, verbose=False, formatter=None) -> None:
         super().__init__()
@@ -145,10 +146,10 @@ class EvalNormalVisitor(BaseVisitor):
 
         msg += ' -> ' + indent + self.format(expr)
         if success:
-            msg += ' =N=> ' + self.format(success)
+            msg += self.ARROW + self.format(success)
 
         if explanation:
-            msg = self.formatter.justify_till_end(msg, gap=40)
+            msg = self.formatter.justify_till_end(msg, gap=45)
             msg += ' ' + explanation
         print(msg)
 
@@ -170,20 +171,48 @@ class EvalNormalVisitor(BaseVisitor):
     def visit_app(self, expr, breadcrumbs):
         self._register_step()
         self.show(expr, breadcrumbs,
-                    explanation="App rule. Two children: %s & %s" % tuple(breadcrumbs+c for c in 'ab'))
+                  explanation=self.app_rule_explanation(breadcrumbs))
         e1 = expr.operator.clone()
         e2 = expr.operand.clone()
         e1.parent = None
         e2.parent = None
-        e1_canonic_form = self.visit(e1, breadcrumbs + 'a')
-        if not e1_canonic_form.is_canonical():
-            from lamedh.expr import CantEvalException  # type: ignore
-            raise CantEvalException()
+        e1_canonic_form = self.try_going_to_canonic_form(e1, breadcrumbs + 'a')
+        e2 = self.reduce_operand(e2, breadcrumbs)  # this will differ in Eager vs Normal
         mapping = {e1_canonic_form.var_name: e2}
         new_e = e1_canonic_form.body.substitute(mapping)
-        branch_b = self.visit(new_e, breadcrumbs + 'b')
-        self.show('', breadcrumbs + '(t)', success=branch_b, explanation="Finished " + breadcrumbs)
-        return branch_b
+        last_branch = self.visit(new_e, breadcrumbs + self.last_branch_name)
+        self.show('', breadcrumbs + '(t)', success=last_branch, explanation="Finished " + breadcrumbs)
+        return last_branch
+
+    def try_going_to_canonic_form(self, expr, breadcrumbs):
+        # Raises CantEvalException if cant reach canonical form
+        canonic_form = self.visit(expr, breadcrumbs)
+        if not canonic_form.is_canonical():
+            from lamedh.expr import CantEvalException  # type: ignore
+            raise CantEvalException()
+        return canonic_form
+
+
+class EvalNormalVisitor(EvalVisitor):
+    ARROW = ' =N=> '
+    last_branch_name = 'b'
+
+    def app_rule_explanation(self, breadcrumbs):
+        return "App rule. Two children: %s & %s" % tuple(breadcrumbs+c for c in 'ab')
+
+    def reduce_operand(self, expr, breadcrumbs):
+        return expr
+
+
+class EvalEagerVisitor(EvalVisitor):
+    ARROW = ' =E=> '
+    last_branch_name = 'c'
+
+    def app_rule_explanation(self, breadcrumbs):
+        return "App rule. Three children: %s, %s & %s" % tuple(breadcrumbs+c for c in 'abc')
+
+    def reduce_operand(self, expr, breadcrumbs):
+        return self.try_going_to_canonic_form(expr, breadcrumbs + 'b')
 
 
 class RedicesVisitor(BaseVisitor):
