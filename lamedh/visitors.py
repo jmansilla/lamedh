@@ -124,7 +124,7 @@ class EvalNormalVisitor(BaseVisitor):
 
     def show(self, expr, breadcrumbs, success='', explanation=''):
         msg = breadcrumbs.ljust(7) + 'step '
-        msg += '%s/%s'.rjust(7) % (self.steps, self.max_steps)
+        msg += ('%s/%s' % (self.steps, self.max_steps)).rjust(7)
 
         if '(t)' in breadcrumbs:
             indent = indent = '| ' * (len(breadcrumbs) - 3)
