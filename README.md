@@ -21,3 +21,5 @@ To open the interactive `lamedh` console on your terminal, simply type
 ```
 lamedh
 ```
+
+![](https://drive.google.com/file/d/1joRbdpL_m-BRcP7siQdbKwnT5cf8vlQT)
