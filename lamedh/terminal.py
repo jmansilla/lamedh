@@ -119,8 +119,8 @@ class Terminal:
                     try:
                         new_expr = func(max_steps=max_steps, verbose=1, formatter=self.formatter)
                     except Exception as e:
-                        print("Error occured when running operation '%s': %s" % (prefix, type(e).__name__))
-                        print(e)
+                        print("Error occured when running operation '%s':" % prefix)
+                        print("  %s: %s" % (type(e).__name__, e))
                         return
                     print(self.OUT, self.formatter(new_expr))
                     self.memory[new_name] = new_expr
