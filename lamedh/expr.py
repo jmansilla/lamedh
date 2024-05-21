@@ -97,6 +97,11 @@ class Expr:
         visitor = EvalNormalVisitor(max_steps=max_steps, verbose=verbose, **kwargs)
         return visitor.visit(self, '')
 
+    def evalE(self, max_steps=10, verbose=False, **kwargs):
+        raise NotImplementedError()
+        # visitor = EvalEagerVisitor(max_steps=max_steps, verbose=verbose, **kwargs)
+        # return visitor.visit(self, '')
+
 
 class Var(Expr):
 
