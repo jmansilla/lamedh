@@ -13,7 +13,6 @@ After cloning this repository, change directory inside the repo folder. Then typ
 ```
 python setup.py install
 ```
-
 ## Usage
 
 To open the interactive `lamedh` console on your terminal, simply type
@@ -21,5 +20,7 @@ To open the interactive `lamedh` console on your terminal, simply type
 ```
 lamedh
 ```
+![output](https://github.com/jmansilla/lamedh/assets/488675/0aca5e95-3175-40df-be88-9c07d05d278b)
 
-![](https://drive.google.com/file/d/1joRbdpL_m-BRcP7siQdbKwnT5cf8vlQT)
+
+
