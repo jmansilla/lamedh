@@ -1,4 +1,5 @@
 from lamedh.expr import Expr
+from lamedh.visitors import SubstituteVisitor
 
 import atexit
 import os
@@ -26,6 +27,7 @@ class Terminal:
 
     def __init__(self):
         self.memory = {}
+        self.formatter = PrettyFormatter()
 
     def main(self):
         self.greetings()
@@ -63,15 +65,19 @@ class Terminal:
             self.process_operation(new_name, raw_expr)
         else:
             if raw_expr in self.memory:
-                print(self.OUT, self.memory[raw_expr])
+                if new_name != '_':
+                    self.memory[new_name] = self.memory[raw_expr]
+                else:
+                    print(self.OUT, self.formatter(self.memory[raw_expr]))
             else:
-                print('Memory has', self.memory.keys())
                 self.parse_expr(new_name, raw_expr)
 
     def parse_expr(self, new_name, raw_expr):
             try:
                 parsed = Expr.from_string(raw_expr)
                 # FIXME: if new parsed expression has free vars that are in memory, substitute them
+                mapping = {k:v.clone() for k, v in self.memory.items() if k != '_'}
+                parsed = SubstituteVisitor().visit(parsed, mapping)
             except Exception as e:
                 print("Parsing Lambda Expr Error: %s" % e)
                 return
@@ -89,13 +95,37 @@ class Terminal:
             return
         stored_expr = self.memory[var]
 
-        if operation == 'show()':
-            print(self.OUT, stored_expr)
-        elif operation == 'debug()':
+        if operation == 'show()' or operation == 'show':
+            print(self.OUT, self.formatter(stored_expr))
+        elif operation == 'debug()' or operation == 'debug':
             print(self.OUT, repr(stored_expr))
         else:
-            print("Error: unknown operation: '%s'" % operation)
-        return
+            for prefix in ['evalE', 'evalN', 'goto_normal_form']:
+                if operation.startswith(prefix):
+                    # option a, ends in "()", option b, ends in "(<number>)"
+                    func = getattr(stored_expr, prefix)
+                    if operation == prefix or operation == prefix+'()':
+                        max_steps = 10
+                    elif operation.endswith(')'):
+                        number_str = operation[len(prefix)+1:-1]
+                        try:
+                            max_steps = int(number_str)
+                        except ValueError:
+                            max_steps = None
+                    if not max_steps:
+                        print("Error: unknown operation: '%s' Type '?' for help" % operation)
+                    # Let's execute the operation
+                    print(self.OUT)
+                    try:
+                        new_expr = func(max_steps=max_steps, verbose=1)
+                    except Exception as e:
+                        print("Error occured when running operation '%s': %s" % (prefix, type(e).__name__))
+                        print(e)
+                        return
+                    print(self.OUT, new_expr)
+                    self.memory[new_name] = new_expr
+                    return
+            print("Error: unknown operation: '%s' Type '?' for help" % operation)
 
     def help(self):
         print("Help:")
@@ -103,10 +133,10 @@ class Terminal:
         print("Then you can:")
         print("  - show expressions by typing: <name> -> show()")
         print("  - show expressions by typing: <name> -> debug()")
-        print("  - reduce to normal form by typing: <name> -> goto_normal(max_steps=N)")
-        print("  - evaluate Eagerly an expression by typing: <name> -> evalE(max_steps=N)")
-        print("  - evaluate Normally an expression by typing: <name> -> evalN(max_steps=N)")
-        print("If max_steps is not specified, defaults to 10.")
+        print("  - reduce to normal form by typing: <name> -> goto_normal_form(<Number>)")
+        print("  - evaluate Eagerly an expression by typing: <name> -> evalE(<Number>)")
+        print("  - evaluate Normaly an expression by typing: <name> -> evalN(<Number>)")
+        print("If max_steps <Number> is not specified, defaults to 10.")
         print("NOTEs:")
         print("   - parsing DOES NOT work with un-parenthesis applications.")
         print("     Instead of λx.λy.xyz you must write λx.λy.((x y) z)")
@@ -116,3 +146,45 @@ class Terminal:
     def greetings(self):
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
         print("Type ? for help.")
+
+
+class PrettyFormatter:
+
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+    def __init__(self):
+        self.colors = [self.ENDC, self.HEADER, self.OKBLUE, self.OKCYAN, self.OKGREEN, self.WARNING, self.FAIL]
+
+    def next_color(self, respect_to):
+        assert respect_to in self.colors
+        idx = self.colors.index(respect_to)
+        return self.colors[(idx + 1) % len(self.colors)]
+
+    def prev_color(self, respect_to):
+        assert respect_to in self.colors
+        idx = self.colors.index(respect_to)
+        return self.colors[(idx - 1) % len(self.colors)]
+
+    def __call__(self, txt):
+        if not isinstance(txt, str):
+            txt = str(txt)
+        current_color = self.colors[0]
+        result = '' + current_color
+        for i, c in enumerate(txt):
+            if c == '(':
+                current_color = self.next_color(current_color)
+                result += current_color + c
+            elif c == ')':
+                current_color = self.prev_color(current_color)
+                result += c + current_color
+            else:
+                result += c
+        return result
