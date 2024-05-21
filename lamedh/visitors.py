@@ -71,20 +71,30 @@ class BoundVarVisitor(BaseVisitor):
 
 class SubstituteVisitor(BaseVisitor):
     provide_children = False
+    provide_initializer_node = True
 
-    def visit_var(self, expr, substitution_map):
+    def visit_var(self, expr, substitution_map, initializer):
         if expr.var_name in substitution_map:
             return substitution_map[expr.var_name].clone()
         else:
             return expr
 
-    def visit_app(self, expr, substitution_map):
+    def visit_app(self, expr, substitution_map, initializer):
         visited_optr = self.visit(expr.operator, substitution_map)
         visited_operand = self.visit(expr.operand, substitution_map)
         App_ = expr.__class__
         return App_(visited_optr, visited_operand)
 
-    def visit_lam(self, expr, substitution_map):
+    def visit_lam(self, expr, substitution_map, initializer):
+        # check if this lambda is binding stronger the variable that we want to substitute
+        if not initializer:
+            if expr.var_name in substitution_map:
+                new_map = {k:v.clone() for k,v in substitution_map.items() if k != expr.var_name}
+                substitution_map = new_map
+
+        if not substitution_map:
+            return expr.clone()
+
         # before propagating substitution, we need to be sure that lam.var_name is safe
         names_not_to_use = set()
         free_vars_in_body = [
@@ -216,5 +226,3 @@ def var_name_generator_numerical(orig_name):
         next_name = pure_name + str(next_number)
         next_number += 1
         yield next_name
-
-
