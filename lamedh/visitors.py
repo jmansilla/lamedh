@@ -108,6 +108,54 @@ class SubstituteVisitor(BaseVisitor):
         Lam_ = expr.__class__
         return Lam_(expr.var_name, new_body)
 
+class EvalNormalVisitor(BaseVisitor):
+
+    def __init__(self, max_steps, verbose=False) -> None:
+        super().__init__()
+        self.steps = 0
+        self.max_steps = max_steps
+        self.verbose = verbose
+
+    def show(self, expr, breadcrumbs, success=''):
+        print(breadcrumbs.ljust(8), 'step', '%s/%s'.ljust(8) % (self.steps, self.max_steps), '->', expr)
+
+    def visit(self, expr, *args, **kwargs):
+        visit_method_name = 'visit_' + type(expr).__name__.lower()
+        method = getattr(self, visit_method_name)
+        return method(expr, *args, **kwargs)
+
+    def visit_var(self, expr, breadcrumbs):
+        from lamedh.expr import CantEvalException
+        raise CantEvalException()
+
+    def _register_step(self):
+        from lamedh.expr import StopEvaluation
+        if self.steps >= self.max_steps:
+            raise StopEvaluation()
+        self.steps += 1
+
+    def visit_lam(self, expr, breadcrumbs):
+        self._register_step()
+        if self.verbose:
+            self.show(expr, breadcrumbs, success=expr)
+        return expr
+
+    def visit_app(self, expr, breadcrumbs):
+        self._register_step()
+        if self.verbose:
+            self.show(expr, breadcrumbs)
+        e1 = expr.operator.clone()
+        e2 = expr.operand.clone()
+        e1.parent = None
+        e2.parent = None
+        e1_canonic_form = self.visit(e1, breadcrumbs + 'a')
+        if not e1_canonic_form.is_canonical():
+            from lamedh.expr import CantEvalException
+            raise CantEvalException()
+        mapping = {e1_canonic_form.var_name: e2}
+        new_e = e1_canonic_form.body.substitute(mapping)
+        return self.visit(new_e, breadcrumbs + 'b')
+
 
 class RedicesVisitor(BaseVisitor):
     # each Redex will be an instances of App class where it's operator it's a Lam
