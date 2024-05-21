@@ -24,7 +24,7 @@ class Expr:
     @staticmethod
     def from_string(expr_str):
         # import here to avoid circular import error
-        from lamedh.parsing.parsing import lambda_parser
+        from lamedh.parsing.parsing import lambda_parser  # type: ignore
         return lambda_parser.parse(expr_str)
 
     def clone(self):

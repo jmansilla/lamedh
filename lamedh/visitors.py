@@ -7,17 +7,26 @@ class VisitError(Exception):
 
 
 class BaseVisitor:
+    provide_children = True
+    provide_initializer_node = False
 
     def visit(self, expr, *args, **kwargs):
-        if hasattr(expr, 'children'):
-            children = [self.visit(c, *args, **kwargs) for c in expr.children()]
-        else:
-            children = []
+        if self.provide_initializer_node:
+            if not hasattr(self, 'initializer'):
+                self.initializer = expr
+            kwargs['initializer'] = self.initializer == expr
+        if self.provide_children:
+            if hasattr(expr, 'children'):
+                children = [self.visit(c, *args, **kwargs) for c in expr.children()]
+            else:
+                children = []
+            args = (children, ) + args
+
         custom_visit_method = 'visit_' + type(expr).__name__.lower()
         method = getattr(self, custom_visit_method, self.generic_visit)
-        return method(expr, children, *args, **kwargs)
+        return method(expr, *args, **kwargs)
 
-    def generic_visit(self, expr, visited_children, *args, **kwargs):
+    def generic_visit(self, expr, *args, **kwargs):
         raise VisitError
 
 
@@ -36,12 +45,7 @@ class FreeVarVisitor(BaseVisitor):
 
 
 class BoundVarVisitor(BaseVisitor):
-
-    def visit(self, expr, *args, **kwargs):
-        if not hasattr(self, 'initializer'):
-            self.initializer = expr
-        kwargs['initializer'] = self.initializer == expr
-        return super().visit(expr, *args, **kwargs)
+    provide_initializer_node = True
 
     def visit_var(self, expr, visited_children, name, initializer):
         if expr.var_name == name:
@@ -66,11 +70,7 @@ class BoundVarVisitor(BaseVisitor):
 
 
 class SubstituteVisitor(BaseVisitor):
-
-    def visit(self, expr, *args, **kwargs):
-        visit_method_name = 'visit_' + type(expr).__name__.lower()
-        method = getattr(self, visit_method_name)
-        return method(expr, *args, **kwargs)
+    provide_children = False
 
     def visit_var(self, expr, substitution_map):
         if expr.var_name in substitution_map:
@@ -108,6 +108,7 @@ class SubstituteVisitor(BaseVisitor):
         return Lam_(expr.var_name, new_body)
 
 class EvalNormalVisitor(BaseVisitor):
+    provide_children = False
 
     def __init__(self, max_steps, verbose=False, formatter=None) -> None:
         super().__init__()
@@ -123,6 +124,8 @@ class EvalNormalVisitor(BaseVisitor):
             return str(expr)
 
     def show(self, expr, breadcrumbs, success='', explanation=''):
+        if not self.verbose:
+            return
         msg = breadcrumbs.ljust(7) + 'step '
         msg += ('%s/%s' % (self.steps, self.max_steps)).rjust(7)
 
@@ -143,11 +146,6 @@ class EvalNormalVisitor(BaseVisitor):
             msg += ' ' + explanation
         print(msg)
 
-    def visit(self, expr, *args, **kwargs):
-        visit_method_name = 'visit_' + type(expr).__name__.lower()
-        method = getattr(self, visit_method_name)
-        return method(expr, *args, **kwargs)
-
     def visit_var(self, expr, breadcrumbs):
         from lamedh.expr import CantEvalException  # type: ignore
         raise CantEvalException('Cant evaluate variable %s' % repr(expr))
@@ -160,15 +158,13 @@ class EvalNormalVisitor(BaseVisitor):
 
     def visit_lam(self, expr, breadcrumbs):
         self._register_step()
-        if self.verbose:
-            self.show(expr, breadcrumbs, success='...', explanation="Abs rule")
+        self.show(expr, breadcrumbs, success='...', explanation="Abs rule")
         return expr
 
     def visit_app(self, expr, breadcrumbs):
         self._register_step()
-        if self.verbose:
-            self.show(expr, breadcrumbs,
-                      explanation="App rule. Two children: %s & %s" % tuple(breadcrumbs+c for c in 'ab'))
+        self.show(expr, breadcrumbs,
+                    explanation="App rule. Two children: %s & %s" % tuple(breadcrumbs+c for c in 'ab'))
         e1 = expr.operator.clone()
         e2 = expr.operand.clone()
         e1.parent = None
