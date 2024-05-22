@@ -55,18 +55,44 @@ class Terminal:
             elif cmd == "exit" or cmd == "quit":
                 print('\nBye!')
                 break
+            elif cmd == "dump":
+                self.dump_memory()
+            elif cmd[0:5] == "load ":
+                filename = cmd[5:].strip()
+                self.process_file(filename)
             else:
                 if not cmd:
                     continue
                 self.process_cmd(cmd)
 
+    def process_def(self, definition):
+        # FIXME: it seems that clean_split doesn't raise any exception.
+        try:
+            new_name, raw_expr = clean_split(definition, '=')
+        except ValueError:
+            print("Error: expression can have at most one '=', got '%s' instead" % definition.count('='))
+            return
+        return new_name, raw_expr
+
+    def add_definition(self, name, expr):
+        if expr in self.memory:
+            if name != '_':
+                self.memory[name] = self.memory[expr]
+            else:
+                print(self.OUT, self.formatter(self.memory[expr]))
+        else:
+            self.parse_expr(name, expr)
+
+    def dump_memory(self):
+        for k, v in self.memory.items():
+            print(f"{k}: {self.formatter(v)}")
+
     def process_cmd(self, cmd):
         if '=' in cmd:
-            try:
-                new_name, raw_expr = clean_split(cmd, '=')
-            except ValueError:
-                print("Error: expression can have at most one '=', got '%s' instead" % cmd.count('='))
+            definition = self.process_def(cmd)
+            if definition is None:
                 return
+            new_name, raw_expr = definition
         else:
             new_name = '_'
             raw_expr = cmd
@@ -78,13 +104,7 @@ class Terminal:
         if '->' in raw_expr:
             self.process_operation(new_name, raw_expr)
         else:
-            if raw_expr in self.memory:
-                if new_name != '_':
-                    self.memory[new_name] = self.memory[raw_expr]
-                else:
-                    print(self.OUT, self.formatter(self.memory[raw_expr]))
-            else:
-                self.parse_expr(new_name, raw_expr)
+            self.add_definition(new_name, raw_expr)
 
     def parse_expr(self, new_name, raw_expr):
             try:
@@ -140,6 +160,17 @@ class Terminal:
                     self.memory[new_name] = new_expr
                     return
             print("Error: unknown operation: '%s' Type '?' for help" % operation)
+
+    def process_file(self, filename):
+        with open(filename) as file:
+            lineno = 1
+            contents = file.readlines()
+            for line in contents:
+                definition = self.process_def(line)
+                if definition is None:
+                    continue
+                new_name, raw_expr = definition
+                self.add_definition(new_name, raw_expr)
 
     def help(self):
         print("Help:")
