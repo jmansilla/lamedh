@@ -47,11 +47,13 @@ class Terminal:
             try:
                 cmd = input(self.PS1)
             except EOFError:
+                print('\nBye!')
                 break
             cmd = cmd.strip()
             if cmd == "?":
                 self.help()
             elif cmd == "exit" or cmd == "quit":
+                print('\nBye!')
                 break
             else:
                 if not cmd:
@@ -211,8 +213,9 @@ class CleanFormatter(NormalFormatter):
         return i
 
     def remove_pair_parentheses(self, txt, open_idx):
-        prefix = txt[:open_idx]
-        suffix = txt[open_idx+1:]
+        idx = self.find_nth(txt, '(', open_idx)
+        prefix = txt[:idx]
+        suffix = txt[idx+1:]
         still_open = prefix.count('(') - prefix.count(')')
         new_suffix = ''
         found = False
