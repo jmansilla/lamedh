@@ -1,32 +1,44 @@
 import unittest
 
 from lamedh.expr import Var, Lam, App
-from lamedh.parsing.parsing import lambda_parser
+from lamedh.parsing.lambda_lark import parser  # type: ignore
+
 
 class TestParsing(unittest.TestCase):
 
+    def parse(self, expr_str):
+        return parser.parse(expr_str)
+
     def test_var(self):
-        x = lambda_parser.parse('x')
+        x = self.parse('x')
         self.assertTrue(isinstance(x, Var))
         self.assertEqual(x.var_name, 'x')
 
     def test_lambda_identity(self):
-        lam = lambda_parser.parse('(λx.x)')
+        lam = self.parse('(λx.x)')
         self.assertTrue(isinstance(lam, Lam))
         self.assertEqual(lam.var_name, 'x')
         self.assertTrue(isinstance(lam.body, Var))
         self.assertEqual(lam.body.var_name, 'x')
 
     def test_app_simple(self):
-        app = lambda_parser.parse('(A B)')
+        app = self.parse('(A B)')
         self.assertTrue(isinstance(app, App))
         self.assertTrue(isinstance(app.operator, Var))
         self.assertEqual(app.operator.var_name, 'A')
         self.assertTrue(isinstance(app.operand, Var))
         self.assertEqual(app.operand.var_name, 'B')
 
+    def test_app_simple_parenteses_less(self):
+        app = self.parse('A B')
+        self.assertEqual(repr(app), 'App(<Var A> <Var B>)')
+
+    def test_app_is_left_associative(self):
+        app = self.parse('A B C')
+        self.assertEqual(repr(app), 'App(App(<Var A> <Var B>) <Var C>)')
+
     def test_app_nested(self):
-        app = lambda_parser.parse('(A (B C))')
+        app = self.parse('(A (B C))')
         self.assertTrue(isinstance(app, App))
         self.assertTrue(isinstance(app.operator, Var))
         self.assertEqual(app.operator.var_name, 'A')
@@ -37,7 +49,7 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(app.operand.operand.var_name, 'C')
 
     def test_lambda_nested(self):
-        lam = lambda_parser.parse('(λx.λy.(w z))')
+        lam = self.parse('(λx.λy.(w z))')
         self.assertTrue(isinstance(lam, Lam))
         self.assertEqual(lam.var_name, 'x')
         self.assertTrue(isinstance(lam.body, Lam))
@@ -48,9 +60,14 @@ class TestParsing(unittest.TestCase):
         self.assertTrue(isinstance(lam.body.body.operand, Var))
         self.assertEqual(lam.body.body.operand.var_name, 'z')
 
+    def test_lamda_extends_to_the_end(self):
+        # meaning that binds stronger than App
+        lam = self.parse('λx.a b')
+        self.assertEqual(repr(lam), 'Lam(λx.App(<Var a> <Var b>))')
+
     def test_parse_and_print_idempotent(self):
         complex_str = '(x (λx.(λy.(w z))))'
-        complex = lambda_parser.parse(complex_str)
+        complex = self.parse(complex_str)
         self.assertEqual(complex_str, str(complex))
 
 
