@@ -13,6 +13,14 @@ After cloning this repository, change directory inside the repo folder. Then typ
 ```
 python setup.py install
 ```
+
+### Install in development mode
+
+Let's you edit the source code and see the changes reflected in the `lamedh` command
+```
+python setup.py develop
+```
+
 ## Usage
 
 To open the interactive `lamedh` console on your terminal, simply type
