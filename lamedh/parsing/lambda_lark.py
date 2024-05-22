@@ -12,8 +12,8 @@ grammar = """
     | "(" app ")"
     | var
 
-lam: LAMBDA bounds "." app
-bounds : var+
+lam: LAMBDA _bounds "." app
+_bounds : var+
 var: NAME
 
 LAMBDA: "λ" | "lambda" | "/"
@@ -55,11 +55,8 @@ class ParseLambdaVisitor:
      def visit_app(self, node, visited_children):
           return App(visited_children[0], visited_children[1])
 
-     def visit_bounds(self, node, visited_children):
-          return visited_children
-
      def visit_lam(self, node, visited_children):
-          _, vars, body = visited_children
+          _, *vars, body = visited_children
           vars.reverse()
           exp = reduce(lambda body,v : Lam(v.var_name, body), vars, body)
           return exp
