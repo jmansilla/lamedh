@@ -60,6 +60,18 @@ class TestParsing(unittest.TestCase):
         self.assertTrue(isinstance(lam.body.body.operand, Var))
         self.assertEqual(lam.body.body.operand.var_name, 'z')
 
+    def test_lambda_multiple_variables(self):
+        lam = self.parse('(λx y.(w z))')
+        self.assertTrue(isinstance(lam, Lam))
+        self.assertEqual(lam.var_name, 'x')
+        self.assertTrue(isinstance(lam.body, Lam))
+        self.assertEqual(lam.body.var_name, 'y')
+        self.assertTrue(isinstance(lam.body.body, App))
+        self.assertTrue(isinstance(lam.body.body.operator, Var))
+        self.assertEqual(lam.body.body.operator.var_name, 'w')
+        self.assertTrue(isinstance(lam.body.body.operand, Var))
+        self.assertEqual(lam.body.body.operand.var_name, 'z')
+
     def test_lamda_extends_to_the_end(self):
         # meaning that binds stronger than App
         lam = self.parse('λx.a b')

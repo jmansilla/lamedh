@@ -1,4 +1,4 @@
-
+from functools import reduce
 from lark import Lark
 from lark.lexer import Token
 from lark.tree import Tree
@@ -12,7 +12,8 @@ grammar = """
     | "(" app ")"
     | var
 
-lam: LAMBDA var "." app
+lam: LAMBDA bounds "." app
+bounds : var+
 var: NAME
 
 LAMBDA: "λ" | "lambda" | "/"
@@ -54,9 +55,14 @@ class ParseLambdaVisitor:
      def visit_app(self, node, visited_children):
           return App(visited_children[0], visited_children[1])
 
+     def visit_bounds(self, node, visited_children):
+          return visited_children
+
      def visit_lam(self, node, visited_children):
-          symbol, var, body = visited_children
-          return Lam(var.var_name, body)
+          _, vars, body = visited_children
+          vars.reverse()
+          exp = reduce(lambda body,v : Lam(v.var_name, body), vars, body)
+          return exp
 
 
 parser = ParseLambdaVisitor()
