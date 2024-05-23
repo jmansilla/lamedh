@@ -143,9 +143,7 @@ class TestReservedNames(BaseTestTerminal):
             stdout = self.call_main(inputs)
             output = stdout.getvalue()
             self.assertIn('Error:', output)
-            if name != 'load':
-                # load will interpret '= ...' as a file name and fail
-                self.assertIn('reserved', output)
+            self.assertIn('reserved', output)
 
 
 if __name__ == '__main__':
