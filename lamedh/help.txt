@@ -2,7 +2,7 @@ Help:
 Define expressions by typing: <name> = <expression>
 Then you can:
   - show expressions by typing: <name> -> show()
-  - show expressions by typing: <name> -> debug()
+  - show expressions by typing: <name> -> as_tree()
   - reduce to normal form by typing: <name> -> goto_normal_form(<Number>)
   - evaluate Eagerly an expression by typing: <name> -> evalE(<Number>)
   - evaluate Normaly an expression by typing: <name> -> evalN(<Number>)
