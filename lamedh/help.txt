@@ -1,0 +1,25 @@
+Help:
+Define expressions by typing: <name> = <expression>
+Then you can:
+  - show expressions by typing: <name> -> show()
+  - show expressions by typing: <name> -> debug()
+  - reduce to normal form by typing: <name> -> goto_normal_form(<Number>)
+  - evaluate Eagerly an expression by typing: <name> -> evalE(<Number>)
+  - evaluate Normaly an expression by typing: <name> -> evalN(<Number>)
+If max_steps <Number> is not specified, defaults to %s.
+
+NOTEs:
+   - parsing DOES NOT work with un-parenthesis applications.
+     Instead of λx.λy.xyz you must write λx.λy.((x y) z)
+   - expressions ARE NOT reduced/evaluated inplace, they are cloned, in order to
+     save the result, type: <new_name> = <name> -> <operation>
+
+   - To smooth reading λ-expressions with naked eye, you can try different formatters.
+     To change formatter, type in λ-Lamedh Terminal FORMAT=<formatter>, were options are:
+       - normal   (all parentheses you can get)
+       - pretty   (same than normal, but colored)
+       - clean    (the minimal amount of parentheses our parser supports)
+
+COMMANDS:
+    dump                shows the expressions in memory
+    load <filename>     loads expressions from file
