@@ -3,7 +3,7 @@
 <div>
 <img src="./images/oxgoad.jpeg" width="300">
 
-The Phoenician letter [Lamdeh](https://en.wikipedia.org/wiki/Lamedh), based on an ox goad, gave rise to the greek λ.
+The Phoenician letter [Lamedh](https://en.wikipedia.org/wiki/Lamedh), based on an ox goad, gave rise to the greek λ.
 </div>
 
 ## Install
