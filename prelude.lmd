@@ -1,0 +1,5 @@
+I = λx.x
+K = λx y.x
+S = λf g x.f x (g x)
+Z = λf x. x
+Suc = λ n f x.f (n f x)
