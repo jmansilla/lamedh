@@ -136,8 +136,8 @@ class EvalVisitor(BaseVisitor):
     def show(self, expr, breadcrumbs, success='', explanation=''):
         if not self.verbose:
             return
-        msg = breadcrumbs.ljust(7) + 'step '
-        msg += ('%s/%s' % (self.steps, self.max_steps)).rjust(7)
+        msg = breadcrumbs.ljust(6) + ' step '
+        msg += ('%s/%s' % (self.steps, self.max_steps)).rjust(6)
 
         if '(t)' in breadcrumbs:
             indent = indent = '| ' * (len(breadcrumbs) - 3)
@@ -160,7 +160,7 @@ class EvalVisitor(BaseVisitor):
     def _register_step(self):
         from lamedh.expr import StopEvaluation  # type: ignore
         if self.steps >= self.max_steps:
-            raise StopEvaluation()
+            raise StopEvaluation('Reached max number of steps: %s' % self.max_steps)
         self.steps += 1
 
     def visit_lam(self, expr, breadcrumbs):
