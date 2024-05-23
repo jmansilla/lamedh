@@ -22,10 +22,20 @@ atexit.register(readline.write_history_file, histfile)
 def clean_split(txt, delimiter):
     return map(lambda s:s.strip(), txt.split(delimiter, 1))
 
+__location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+DEFAULT_NUMBER_OF_STEPS = 25
+HELP = open(os.path.join(__location__, 'help.txt')).read()
+HELP = HELP % DEFAULT_NUMBER_OF_STEPS
+
 
 class Terminal:
     PS1 = "λh> "
     OUT = "OUT: "
+    DEFAULT_NAME = '_'
+    HIDDEN_NAMES = [DEFAULT_NAME, 'FORMAT']
+    RESERVED_NAMES = ['?', 'exit', 'quit', 'dump', 'load']
 
     def __init__(self):
         self.memory = {}
@@ -53,11 +63,11 @@ class Terminal:
             if cmd == "?":
                 self.help()
             elif cmd == "exit" or cmd == "quit":
-                print('\nBye!')
+                print('Bye!')
                 break
             elif cmd == "dump":
                 self.dump_memory()
-            elif cmd[0:5] == "load ":
+            elif cmd.startswith("load "):
                 filename = cmd[5:].strip()
                 self.process_file(filename)
             else:
@@ -74,17 +84,27 @@ class Terminal:
             return
         return new_name, raw_expr
 
-    def add_definition(self, name, expr):
+    def add_definition(self, new_name, expr):
+        if new_name in self.RESERVED_NAMES:
+            print("Error: name '%s' is reserved" % new_name)
+            return
         if expr in self.memory:
-            if name != '_':
-                self.memory[name] = self.memory[expr]
+            # actually "expr" is a name in memory and not an expression
+            if new_name != self.DEFAULT_NAME:
+                # creating a new name for existing expression
+                self.memory[new_name] = self.memory[expr]
             else:
+                # invoking print for existing expression
                 print(self.OUT, self.formatter(self.memory[expr]))
         else:
-            self.parse_expr(name, expr)
+            # creating a new expression, and saving it as new_name
+            self.parse_expr(new_name, expr)
 
     def dump_memory(self):
+        print("Dumping expressions saved in memory:")
         for k, v in self.memory.items():
+            if k in self.HIDDEN_NAMES:
+                continue
             print(f"{k}: {self.formatter(v)}")
 
     def process_cmd(self, cmd):
@@ -94,7 +114,7 @@ class Terminal:
                 return
             new_name, raw_expr = definition
         else:
-            new_name = '_'
+            new_name = self.DEFAULT_NAME
             raw_expr = cmd
         if not new_name:
             print("Error: expression name can't be empty")
@@ -109,8 +129,7 @@ class Terminal:
     def parse_expr(self, new_name, raw_expr):
             try:
                 parsed = Expr.from_string(raw_expr)
-                # FIXME: if new parsed expression has free vars that are in memory, substitute them
-                mapping = {k:v.clone() for k, v in self.memory.items() if k != '_'}
+                mapping = {k: v.clone() for k, v in self.memory.items() if k not in self.HIDDEN_NAMES}
                 parsed = SubstituteVisitor().visit(parsed, mapping)
             except Exception as e:
                 print("Parsing Lambda Expr Error: %s" % e)
@@ -139,7 +158,7 @@ class Terminal:
                     # option a, ends in "()", option b, ends in "(<number>)"
                     func = getattr(stored_expr, prefix)
                     if operation == prefix or operation == prefix+'()':
-                        max_steps = 10
+                        max_steps = DEFAULT_NUMBER_OF_STEPS
                     elif operation.endswith(')'):
                         number_str = operation[len(prefix)+1:-1]
                         try:
@@ -162,37 +181,20 @@ class Terminal:
             print("Error: unknown operation: '%s' Type '?' for help" % operation)
 
     def process_file(self, filename):
-        with open(filename) as file:
-            lineno = 1
-            contents = file.readlines()
-            for line in contents:
-                definition = self.process_def(line)
-                if definition is None:
-                    continue
-                new_name, raw_expr = definition
-                self.add_definition(new_name, raw_expr)
+        try:
+            with open(filename) as file:
+                contents = file.readlines()
+                for line in contents:
+                    definition = self.process_def(line)
+                    if definition is None:
+                        continue
+                    new_name, raw_expr = definition
+                    self.add_definition(new_name, raw_expr)
+        except Exception as e:
+            print("Error: %s" % e)
 
     def help(self):
-        print("Help:")
-        print("Define expressions by typing: <name> = <expression>")
-        print("Then you can:")
-        print("  - show expressions by typing: <name> -> show()")
-        print("  - show expressions by typing: <name> -> debug()")
-        print("  - reduce to normal form by typing: <name> -> goto_normal_form(<Number>)")
-        print("  - evaluate Eagerly an expression by typing: <name> -> evalE(<Number>)")
-        print("  - evaluate Normaly an expression by typing: <name> -> evalN(<Number>)")
-        print("If max_steps <Number> is not specified, defaults to 10.")
-        print("NOTEs:")
-        print("   - parsing DOES NOT work with un-parenthesis applications.")
-        print("     Instead of λx.λy.xyz you must write λx.λy.((x y) z)")
-        print("   - expressions ARE NOT reduced/evaluated inplace, they are cloned, in order to")
-        print("     save the result, type: <new_name> = <name> -> <operation>")
-        print("")
-        print("   - To smooth reading λ-expressions with naked eye, you can try different formatters.")
-        print("     To change formatter, type in λ-Lamedh Terminal FORMAT=<formatter>, were options are:")
-        print("       - normal   (all parentheses you can get)")
-        print("       - pretty   (same than normal, but colored)")
-        print("       - clean    (the minimal amount of parentheses our parser supports)")
+        print(HELP)
 
     def greetings(self):
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
