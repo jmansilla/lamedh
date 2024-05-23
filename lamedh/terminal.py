@@ -151,7 +151,7 @@ class Terminal:
         if operation == 'show()' or operation == 'show':
             print(self.OUT, self.formatter(stored_expr))
         elif operation == 'debug()' or operation == 'debug':
-            print(self.OUT, repr(stored_expr))
+            print(self.OUT, self.formatter.as_tree(repr(stored_expr)))
         else:
             for prefix in ['evalE', 'evalN', 'goto_normal_form']:
                 if operation.startswith(prefix):
@@ -202,6 +202,7 @@ class Terminal:
 
 
 class NormalFormatter:
+    indent = '|  '
 
     def __call__(self, expr):
         return str(expr)
@@ -212,6 +213,24 @@ class NormalFormatter:
         if length < (columns - gap):
             msg += ' ' * (columns - gap - length)
         return msg
+
+    def as_tree(self, expr_str):
+        result = "\n"
+        depth = 0
+        for c in expr_str:
+            if c == '(':
+                depth += 1
+                result += '('
+                result += '\n' + (self.indent * depth)
+            elif c == ')':
+                depth -= 1
+                result += '\n' + (self.indent * depth) + ')'
+            elif c == ' ' or c == '.':
+                result += c
+                result += '\n' + (self.indent * depth)
+            else:
+                result += c
+        return result
 
 
 class CleanFormatter(NormalFormatter):
@@ -267,7 +286,7 @@ class CleanFormatter(NormalFormatter):
         return prefix + new_suffix
 
 
-class PrettyFormatter:
+class PrettyFormatter(NormalFormatter):
 
     PINK = '\033[95m'
     BLUE = '\033[94m'

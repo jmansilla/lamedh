@@ -31,11 +31,11 @@ class TestParsing(unittest.TestCase):
 
     def test_app_simple_parenteses_less(self):
         app = self.parse('A B')
-        self.assertEqual(repr(app), 'App(<Var A> <Var B>)')
+        self.assertEqual(repr(app), 'App(<Var:A> <Var:B>)')
 
     def test_app_is_left_associative(self):
         app = self.parse('A B C')
-        self.assertEqual(repr(app), 'App(App(<Var A> <Var B>) <Var C>)')
+        self.assertEqual(repr(app), 'App(App(<Var:A> <Var:B>) <Var:C>)')
 
     def test_app_nested(self):
         app = self.parse('(A (B C))')
@@ -75,7 +75,7 @@ class TestParsing(unittest.TestCase):
     def test_lamda_extends_to_the_end(self):
         # meaning that binds stronger than App
         lam = self.parse('λx.a b')
-        self.assertEqual(repr(lam), 'Lam(λx.App(<Var a> <Var b>))')
+        self.assertEqual(repr(lam), 'Lam(λx.App(<Var:a> <Var:b>))')
 
     def test_lambda_extends_to_the_end_when_nested(self):
         # this is a known issue (https://github.com/jmansilla/lamedh/issues/2).

@@ -110,7 +110,7 @@ class Var(Expr):
         self.var_name = name
 
     def __repr__(self):
-        return f'<Var {self.var_name}>'
+        return f'<Var:{self.var_name}>'
 
     def __str__(self):
         return self.var_name
