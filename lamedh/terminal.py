@@ -150,7 +150,7 @@ class Terminal:
 
         if operation == 'show()' or operation == 'show':
             print(self.OUT, self.formatter(stored_expr))
-        elif operation == 'debug()' or operation == 'debug':
+        elif operation == 'as_tree()' or operation == 'as_tree':
             print(self.OUT, self.formatter.as_tree(repr(stored_expr)))
         else:
             for prefix in ['evalE', 'evalN', 'goto_normal_form']:
