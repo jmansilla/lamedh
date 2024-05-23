@@ -1,0 +1,5 @@
+TRUE = /x y.x
+FALSE = /x y.y
+NOT = /b x y.b y x
+AND = /b c x y.b (c x y) y
+IF = /b x y.b x y
