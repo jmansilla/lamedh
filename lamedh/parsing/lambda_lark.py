@@ -14,8 +14,7 @@ grammar = """
     | "(" app ")"
     | var
 
-lam: LAMBDA _bounds "." lam
-   | LAMBDA _bounds "." app
+lam: LAMBDA _bounds "." app
 
 _bounds : var+
 var: NAME
