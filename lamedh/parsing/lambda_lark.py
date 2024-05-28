@@ -8,11 +8,15 @@ from lamedh.expr import Lam, App, Var
 grammar = """
 ?start: app
 
-?app: lam | app " "* app
+?app: lam
+    | app " "* lam
+    | app " "* app
     | "(" app ")"
     | var
 
-lam: LAMBDA _bounds "." app
+lam: LAMBDA _bounds "." lam
+   | LAMBDA _bounds "." app
+
 _bounds : var+
 var: NAME
 

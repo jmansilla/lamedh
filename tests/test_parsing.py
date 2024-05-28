@@ -81,8 +81,8 @@ class TestParsing(unittest.TestCase):
         # this is a known issue (https://github.com/jmansilla/lamedh/issues/2).
         # when fixing it, uncomment the following test.
 
-        # lam = self.parse('λx.x λz.z x')
-        # self.assertEqual(str(lam), '(λx.(x (λz.(z x))))')
+        lam = self.parse('λx.x λz.z x')
+        self.assertEqual(str(lam), '(λx.(x (λz.(z x))))')
         pass
 
     def test_parse_and_print_idempotent(self):
