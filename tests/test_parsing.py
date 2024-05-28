@@ -78,12 +78,8 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(repr(lam), 'Lam(λx.App(<Var:a> <Var:b>))')
 
     def test_lambda_extends_to_the_end_when_nested(self):
-        # this is a known issue (https://github.com/jmansilla/lamedh/issues/2).
-        # when fixing it, uncomment the following test.
-
-        # lam = self.parse('λx.x λz.z x')
-        # self.assertEqual(str(lam), '(λx.(x (λz.(z x))))')
-        pass
+        lam = self.parse('λx.x λz.z x')
+        self.assertEqual(str(lam), '(λx.(x (λz.(z x))))')
 
     def test_parse_and_print_idempotent(self):
         complex_str = '(x (λx.(λy.(w z))))'
