@@ -9,5 +9,7 @@ setup(
     description='Lambda Reduction and Evaluation',
     packages=find_packages(),
     scripts=['bin/lamedh'],
+    package_data={'': ['help.txt']},
+    include_package_data=True,
     install_requires=['lark==1.1.9'],
 )
