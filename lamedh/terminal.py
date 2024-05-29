@@ -146,7 +146,12 @@ class Terminal:
             except Exception as e:
                 print("Parsing Lambda Expr Error: %s" % e)
                 return
-            print('new expression parsed:', self.formatter(parsed))
+            msg = 'new expression parsed:'
+            if new_name != self.DEFAULT_NAME:
+                msg += ' %s = %s' % (new_name, self.formatter(parsed))
+            else:
+                msg += ' %s' % self.formatter(parsed)
+            print(msg)
             self.memory[new_name] = parsed
 
     def process_operation(self, new_name, raw_expr):
