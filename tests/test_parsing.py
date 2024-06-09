@@ -1,10 +1,15 @@
 import unittest
 
 from lamedh.expr import Var, Lam, App
+from lamedh.expr.applicative import BooleanConstant, NaturalConstant, UnaryOp, BinaryOp, IfThenElse, Error, TypeError
 from lamedh.parsing.simple import parser  # type: ignore
 
+class Parsing(unittest.TestCase):
+    def parse(self, expr_str):
+        return parser.parse(expr_str)
 
-class TestParsing(unittest.TestCase):
+
+class TestParsing(Parsing):
 
     def parse(self, expr_str):
         return parser.parse(expr_str)
@@ -85,6 +90,62 @@ class TestParsing(unittest.TestCase):
         complex_str = '(x (λx.(λy.(w z))))'
         complex = self.parse(complex_str)
         self.assertEqual(complex_str, str(complex))
+
+
+class TestApplicativeParsing(Parsing):
+    def test_parse_boolean(self):
+        for bool_str in ['false', 'true']:
+            bool_expr = self.parse(bool_str)
+            self.assertTrue(isinstance(bool_expr, BooleanConstant))
+            self.assertEqual(bool_expr.value, bool_str)
+
+    def test_parse_errors(self):
+        for e_str in ['error', 'typeerror']:
+            e_expr = self.parse(e_str)
+            if e_str == 'error':
+                self.assertTrue(isinstance(e_expr, Error))
+            else:
+                self.assertTrue(isinstance(e_expr, TypeError))
+            self.assertEqual(str(e_expr), e_str)
+
+    def test_paser_number(self):
+        for natural_str in [str(n) for n in range(20)]:
+            natural_expr = self.parse(natural_str)
+            self.assertTrue(isinstance(natural_expr, NaturalConstant))
+            self.assertEqual(natural_expr.value, natural_str)
+
+    def test_negative_numbers(self):
+        for txt in ['-6', '- 6', '-   6']:
+            negative_number = self.parse(txt)
+            self.assertTrue(isinstance(negative_number, UnaryOp))
+            self.assertTrue(isinstance(negative_number.operand, NaturalConstant))
+            self.assertEqual(str(negative_number), '(- 6)')
+
+    def test_not_boolean(self):
+        for txt in ['not true', 'not   true', 'not     false']:
+            not_expr = self.parse(txt)
+            self.assertTrue(isinstance(not_expr, UnaryOp))
+            self.assertTrue(isinstance(not_expr.operand, BooleanConstant))
+            expected = txt.replace('not', '').strip()
+            self.assertEqual(str(not_expr), f'(not {expected})')
+
+    def test_binary_operation(self):
+        sub_a = 'a'
+        sub_b = 'b'
+        for operation in ['+', '-', '*', '/', '%', '<', '<=', '>', '>=', '==', '!=', 'and', 'or', 'implies', '<==>']:
+            a_op_b_txt = f'{sub_a} {operation} {sub_b}'
+            expr = self.parse(a_op_b_txt)
+            self.assertTrue(isinstance(expr, BinaryOp))
+            self.assertEqual(str(expr), f'({sub_a} {operation} {sub_b})')
+
+    def test_if_then_else(self):
+        sub_a = 'a'
+        sub_b = 'b'
+        sub_c = 'c'
+        if_txt = f'if {sub_a} then {sub_b} else {sub_c}'
+        expr = self.parse(if_txt)
+        self.assertTrue(isinstance(expr, IfThenElse))
+        self.assertEqual(str(expr), f'(If {sub_a} Then {sub_b} Else {sub_c})')
 
 
 if __name__ == '__main__':
