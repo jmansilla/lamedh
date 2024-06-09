@@ -1,7 +1,7 @@
 import unittest
 
 from lamedh.expr import Var, Lam, App
-from lamedh.parsing.lambda_lark import parser  # type: ignore
+from lamedh.parsing.simple import parser  # type: ignore
 
 
 class TestParsing(unittest.TestCase):
