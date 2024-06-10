@@ -5,7 +5,8 @@ from lark.tree import Tree
 
 from lamedh.expr import Expr, Lam, App, Var
 from lamedh.expr.applicative import (
-    BooleanConstant, NaturalConstant, UnaryOp, BinaryOp, IfThenElse, Error, TypeError,
+    BooleanConstant, NaturalConstant, UnaryOp, BinaryOp, IfThenElse,
+    Error, TypeError, Tuple,
     UnaryOpTable, BinaryOpTable
 )
 
@@ -16,6 +17,7 @@ grammar = f"""
 ?start: app
 
 ?app: error
+    | tuple
     | const
     | unary_op
     | binary_op
@@ -35,6 +37,8 @@ const: BOOL | NATURAL
 unary_op: UNARY_OP app
 binary_op: app BIN_OP app
 error: ERRORS
+tuple: "<" app tuple_elem* ">"
+tuple_elem: "," app
 
 ERRORS: "error" | "typeerror"
 BOOL: "true" | "false"
@@ -143,6 +147,10 @@ class ParseLambdaVisitor:
                return TypeError()
           else:
                raise ValueError(token.value)
+
+     def visit_tuple(self, node, visited_children):
+          assert len(visited_children) >= 1
+          return Tuple(visited_children)
 
 
 parser = ParseLambdaVisitor()

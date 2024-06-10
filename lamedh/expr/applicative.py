@@ -127,3 +127,24 @@ class IfThenElse(Expr):
 
     def __str__(self):
         return f'(If {self.guard} Then {self.then_body} Else {self.else_body})'
+
+
+class Tuple(Expr):
+    def __init__(self, elems):
+        self.elems = []
+        self.parent = None
+        for elem in elems:
+            assert isinstance(elem, Expr)
+            elem.parent = self
+            self.elems.append(elem)
+
+    def children(self):
+        return self.elems[:]
+
+    def __repr__(self):
+        args = ', '.join(map(repr, self.elems))
+        return f'<Tuple:{args}>'
+
+    def __str__(self):
+        args = ', '.join(map(str, self.elems))
+        return f'<{args}>'

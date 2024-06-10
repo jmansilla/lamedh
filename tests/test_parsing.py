@@ -1,7 +1,7 @@
 import unittest
 
 from lamedh.expr import Var, Lam, App
-from lamedh.expr.applicative import BooleanConstant, NaturalConstant, UnaryOp, BinaryOp, IfThenElse, Error, TypeError
+from lamedh.expr.applicative import BooleanConstant, NaturalConstant, UnaryOp, BinaryOp, IfThenElse, Error, TypeError, Tuple
 from lamedh.parsing.simple import parser  # type: ignore
 
 class Parsing(unittest.TestCase):
@@ -146,6 +146,38 @@ class TestApplicativeParsing(Parsing):
         expr = self.parse(if_txt)
         self.assertTrue(isinstance(expr, IfThenElse))
         self.assertEqual(str(expr), f'(If {sub_a} Then {sub_b} Else {sub_c})')
+
+    def test_parse_tuple(self):
+        basic_tuple = '<x, y, z>'
+        expr = self.parse(basic_tuple)
+        self.assertTrue(isinstance(expr, Tuple))
+        self.assertEqual(str(expr), basic_tuple)
+
+    def test_singleton_tuple(self):
+        basic_tuple = '<x>'
+        expr = self.parse(basic_tuple)
+        self.assertTrue(isinstance(expr, Tuple))
+        self.assertEqual(str(expr), basic_tuple)
+
+    def test_parse_tuple_inside_tuple(self):
+        basic_tuple = '<x, y, <a, b, c>, d>'
+        expr = self.parse(basic_tuple)
+        self.assertTrue(isinstance(expr, Tuple))
+        self.assertEqual(str(expr), basic_tuple)
+        self.assertEqual(len(expr.children()), 4)
+        third = expr.children()[2]
+        self.assertIsInstance(third, Tuple)
+        self.assertEqual(len(third.children()), 3)
+
+    def test_parse_tuple_with_comparisons(self):
+        comparison_easy = '<x, y <= z>'
+        expr = self.parse(comparison_easy)
+        self.assertTrue(isinstance(expr, Tuple))
+        self.assertEqual(str(expr), '<x, (y <= z)>')
+        comparison_hard = '<x, y >= z>'
+        expr = self.parse(comparison_hard)
+        self.assertTrue(isinstance(expr, Tuple))
+        self.assertEqual(str(expr), '<x, (y >= z)>')
 
 
 if __name__ == '__main__':
