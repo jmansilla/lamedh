@@ -182,3 +182,24 @@ class LetIn(Expr):
         return self.to_string(str, 'let ')
 
 
+class LetRec(LetIn):
+    def __init__(self, definitions, in_expr):
+        super().__init__(definitions, in_expr)
+        # just finish ensuring that definitions are abstractions
+        from lamedh.expr import Lam
+        for sub in self.sub_exprs:
+            assert isinstance(sub, Lam)
+
+    def __str__(self):
+        return self.to_string(str, 'letrec ')
+
+
+class Rec(Expr):
+    def __init__(self, body):
+        self.body = body
+
+    def children(self):
+        return [self.body]
+
+    def to_string(self, func, name=''):
+        return f'(rec {func(self.body)})'

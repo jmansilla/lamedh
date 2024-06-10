@@ -6,7 +6,7 @@ from lark.tree import Tree
 from lamedh.expr import Expr, Lam, App, Var
 from lamedh.expr.applicative import (
     BooleanConstant, NaturalConstant, UnaryOp, BinaryOp, IfThenElse,
-    Error, TypeError, Tuple, LetIn,
+    Error, TypeError, Tuple, LetIn, Rec, LetRec,
     UnaryOpTable, BinaryOpTable
 )
 
@@ -21,6 +21,8 @@ grammar = f"""
     | const
     | ifthenelse
     | letin
+    | letrec
+    | rec
     | unary_op
     | binary_op
     | lam
@@ -32,12 +34,10 @@ grammar = f"""
 lam: LAMBDA _bounds "." app
 
 _bounds : var+
-ifthenelse: "if" app "then" app "else" app
 var: NAME
-const: BOOL | NATURAL
-unary_op: UNARY_OP app
-binary_op: app BIN_OP app
-error: ERRORS
+
+ifthenelse: "if" app "then" app "else" app
+
 tuple: _tuple_def | tuple_indexing
 _tuple_def: "<" app tuple_elem* ">"
 tuple_elem: "," app
@@ -50,9 +50,20 @@ letin: "let" local_var local_var_elem* "in" app
 local_var: pattern ":=" app
 local_var_elem: "," local_var
 
+rec: "rec" app
+letrec: "letrec" local_lam local_lam_elem* "in" app
+local_lam: pattern ":=" lam
+local_lam_elem: "," local_lam
+
+error: ERRORS
 ERRORS: "error" | "typeerror"
+
+const: BOOL | NATURAL
 BOOL: "true" | "false"
 NATURAL: /[0-9]+/
+
+unary_op: UNARY_OP app
+binary_op: app BIN_OP app
 UNARY_OP: {unary_symbols}
 BIN_OP: {binary_symbols}
 
@@ -162,23 +173,37 @@ class ParseLambdaVisitor:
           assert len(visited_children) >= 1
           return Tuple(visited_children)
 
-     def visit_letin(self, node, visited_children):
+     def local_definitions(self, node, visited_children, factory):
           assert len(visited_children) >= 2
           *local_vars, body = visited_children
           assert isinstance(local_vars, list)
           for lv in local_vars: assert len(lv) == 2
           assert isinstance(body, Expr)
-          return LetIn(local_vars, body)
+          return factory(local_vars, body)
+
+     def visit_letin(self, node, visited_children):
+          return self.local_definitions(node, visited_children, LetIn)
+
+     def visit_letrec(self, node, visited_children):
+          return self.local_definitions(node, visited_children, LetRec)
 
      def visit_local_var(self, node, visited_children):
           assert len(visited_children) == 2, visited_children
           pattern, definition = visited_children
           return (pattern, definition)
 
+     def visit_local_lam(self, node, visited_children):
+          return self.visit_local_var(node, visited_children)
+
      def visit_pattern(self, node, visited_children):
           if len(visited_children) == 1:
                return visited_children[0]
           else:
                return visited_children
+
+     def visit_rec(self, node, visited_children):
+          assert len(visited_children) == 1
+          return Rec(visited_children[0])
+
 
 parser = ParseLambdaVisitor()

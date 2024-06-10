@@ -3,7 +3,7 @@ import unittest
 from lamedh.expr import Var, Lam, App
 from lamedh.expr.applicative import (
     BooleanConstant, NaturalConstant, UnaryOp, BinaryOp, IfThenElse, Error, TypeError,
-    Tuple, LetIn)
+    Tuple, LetIn, Rec, LetRec)
 from lamedh.parsing.simple import parser  # type: ignore
 
 class Parsing(unittest.TestCase):
@@ -207,6 +207,20 @@ class TestApplicativeParsing(Parsing):
         explicit_parenthesis = '(let <x, <y, z>>:=<8, <9, 10>> in ((x + 1) + y))'
         expr = self.parse(loc)
         self.assertIsInstance(expr, LetIn)
+        self.assertEqual(str(expr), explicit_parenthesis)
+
+    def test_rec_parsing(self):
+        txt = 'rec λx.a b'
+        expr = self.parse(txt)
+        self.assertIsInstance(expr, Rec)
+        explicit_parenthesis = '(rec (λx.(a b)))'
+        self.assertEqual(str(expr), explicit_parenthesis)
+
+    def test_letrec(self):
+        letrec = 'letrec x:=λy.y in x 1'
+        explicit_parenthesis = '(letrec x:=(λy.y) in (x 1))'
+        expr = self.parse(letrec)
+        self.assertIsInstance(expr, LetRec)
         self.assertEqual(str(expr), explicit_parenthesis)
 
 
