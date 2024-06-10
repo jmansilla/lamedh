@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from lamedh.tree import TreeNode
 from lamedh.visitors import FreeVarVisitor, BoundVarVisitor, SubstituteVisitor, RedicesVisitor
 from lamedh.visitors import EvalNormalVisitor, EvalEagerVisitor
 
@@ -20,7 +21,7 @@ class CantReduceToCanonicalException(Exception):
     pass
 
 
-class Expr:
+class Expr(TreeNode):
 
     @staticmethod
     def from_string(expr_str):
@@ -106,7 +107,6 @@ class Expr:
 class Var(Expr):
 
     def __init__(self, name):
-        self.parent = None
         self.var_name = name
 
     def __repr__(self):
@@ -123,12 +123,9 @@ class Var(Expr):
 class Lam(Expr):
 
     def __init__(self, name, body):
-        self.parent = None
         assert isinstance(name, str)
         self.var_name = name
-        assert isinstance(body, Expr)
         self.body = body
-        self.body.parent = self
 
     def __repr__(self):
         return f'Lam(λ{self.var_name}.{repr(self.body)})'
@@ -157,13 +154,8 @@ class Lam(Expr):
 class App(Expr):
 
     def __init__(self, operator, operand):
-        self.parent = None
-        assert isinstance(operator, Expr)
-        assert isinstance(operand, Expr)
         self.operator = operator
         self.operand = operand
-        operator.parent = self
-        operand.parent = self
 
     def children(self):
         return [self.operator, self.operand]
