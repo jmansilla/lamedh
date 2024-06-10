@@ -6,7 +6,7 @@ from lark.tree import Tree
 from lamedh.expr import Expr, Lam, App, Var
 from lamedh.expr.applicative import (
     BooleanConstant, NaturalConstant, UnaryOp, BinaryOp, IfThenElse,
-    Error, TypeError, Tuple,
+    Error, TypeError, Tuple, LetIn,
     UnaryOpTable, BinaryOpTable
 )
 
@@ -19,9 +19,10 @@ grammar = f"""
 ?app: error
     | tuple
     | const
+    | ifthenelse
+    | letin
     | unary_op
     | binary_op
-    | ifthenelse
     | lam
     | app " "* lam
     | app " "* app
@@ -37,8 +38,17 @@ const: BOOL | NATURAL
 unary_op: UNARY_OP app
 binary_op: app BIN_OP app
 error: ERRORS
-tuple: "<" app tuple_elem* ">"
+tuple: _tuple_def | tuple_indexing
+_tuple_def: "<" app tuple_elem* ">"
 tuple_elem: "," app
+tuple_indexing: app "." NATURAL
+
+pattern: var | "<" pattern pattern_elem* ">"
+pattern_elem: "," pattern
+
+letin: "let" local_var local_var_elem* "in" app
+local_var: pattern ":=" app
+local_var_elem: "," local_var
 
 ERRORS: "error" | "typeerror"
 BOOL: "true" | "false"
@@ -152,5 +162,23 @@ class ParseLambdaVisitor:
           assert len(visited_children) >= 1
           return Tuple(visited_children)
 
+     def visit_letin(self, node, visited_children):
+          assert len(visited_children) >= 2
+          *local_vars, body = visited_children
+          assert isinstance(local_vars, list)
+          for lv in local_vars: assert len(lv) == 2
+          assert isinstance(body, Expr)
+          return LetIn(local_vars, body)
+
+     def visit_local_var(self, node, visited_children):
+          assert len(visited_children) == 2, visited_children
+          pattern, definition = visited_children
+          return (pattern, definition)
+
+     def visit_pattern(self, node, visited_children):
+          if len(visited_children) == 1:
+               return visited_children[0]
+          else:
+               return visited_children
 
 parser = ParseLambdaVisitor()

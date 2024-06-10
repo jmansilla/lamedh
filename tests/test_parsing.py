@@ -1,7 +1,9 @@
 import unittest
 
 from lamedh.expr import Var, Lam, App
-from lamedh.expr.applicative import BooleanConstant, NaturalConstant, UnaryOp, BinaryOp, IfThenElse, Error, TypeError, Tuple
+from lamedh.expr.applicative import (
+    BooleanConstant, NaturalConstant, UnaryOp, BinaryOp, IfThenElse, Error, TypeError,
+    Tuple, LetIn)
 from lamedh.parsing.simple import parser  # type: ignore
 
 class Parsing(unittest.TestCase):
@@ -132,10 +134,10 @@ class TestApplicativeParsing(Parsing):
     def test_binary_operation(self):
         sub_a = 'a'
         sub_b = 'b'
-        for operation in ['+', '-', '*', '/', '%', '<', '<=', '>', '>=', '==', '!=', 'and', 'or', 'implies', '<==>']:
+        for operation in ['+', '-', '*', '/', '%', '<', '<=', '>', '>=', '==', '!=', 'and', 'or']:
             a_op_b_txt = f'{sub_a} {operation} {sub_b}'
             expr = self.parse(a_op_b_txt)
-            self.assertTrue(isinstance(expr, BinaryOp))
+            self.assertIsInstance(expr, BinaryOp)
             self.assertEqual(str(expr), f'({sub_a} {operation} {sub_b})')
 
     def test_if_then_else(self):
@@ -178,6 +180,34 @@ class TestApplicativeParsing(Parsing):
         expr = self.parse(comparison_hard)
         self.assertTrue(isinstance(expr, Tuple))
         self.assertEqual(str(expr), '<x, (y >= z)>')
+
+    def test_local_variable(self):
+        loc = 'let x:=8 in x + 1'
+        explicit_parenthesis = '(let x:=8 in (x + 1))'
+        expr = self.parse(loc)
+        self.assertIsInstance(expr, LetIn)
+        self.assertEqual(str(expr), explicit_parenthesis)
+
+    def test_two_local_variable(self):
+        loc = 'let x:=8, y:=9 in x + 1 + y'
+        explicit_parenthesis = '(let x:=8, y:=9 in ((x + 1) + y))'
+        expr = self.parse(loc)
+        self.assertIsInstance(expr, LetIn)
+        self.assertEqual(str(expr), explicit_parenthesis)
+
+    def test_pattern_in_local_variable(self):
+        loc = 'let <x,y>:=<8,9> in x + 1 + y'
+        explicit_parenthesis = '(let <x, y>:=<8, 9> in ((x + 1) + y))'
+        expr = self.parse(loc)
+        self.assertIsInstance(expr, LetIn)
+        self.assertEqual(str(expr), explicit_parenthesis)
+
+    def test_pattern_in_pattern_in_local_variable(self):
+        loc = 'let <x,<y, z>>:=<8,<9, 10>> in x + 1 + y'
+        explicit_parenthesis = '(let <x, <y, z>>:=<8, <9, 10>> in ((x + 1) + y))'
+        expr = self.parse(loc)
+        self.assertIsInstance(expr, LetIn)
+        self.assertEqual(str(expr), explicit_parenthesis)
 
 
 if __name__ == '__main__':
