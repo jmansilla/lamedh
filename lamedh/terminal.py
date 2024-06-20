@@ -181,20 +181,20 @@ class Terminal:
             self.add_definition(new_name, raw_expr)
 
     def parse_expr(self, new_name, raw_expr):
-            try:
-                parsed = Expr.from_string(raw_expr)
-                mapping = {k: v.clone() for k, v in self.memory.items() if k not in self.HIDDEN_NAMES}
-                parsed = SubstituteVisitor().visit(parsed, mapping)
-            except Exception as e:
-                print("Parsing Lambda Expr Error: %s" % e)
-                return
-            msg = 'new expression parsed:'
-            if new_name != self.DEFAULT_NAME:
-                msg += ' %s = %s' % (new_name, self.formatter(parsed))
-            else:
-                msg += ' %s' % self.formatter(parsed)
-            print(msg)
-            self.memory[new_name] = parsed
+        try:
+            parsed = Expr.from_string(raw_expr)
+            mapping = {k: v.clone() for k, v in self.memory.items() if k not in self.HIDDEN_NAMES}
+            parsed = SubstituteVisitor().visit(parsed, mapping)
+        except Exception as e:
+            print("Parsing Lambda Expr Error: %s" % e)
+            return
+        msg = 'new expression parsed:'
+        if new_name != self.DEFAULT_NAME:
+            msg += ' %s = %s' % (new_name, self.formatter(parsed))
+        else:
+            msg += ' %s' % self.formatter(parsed)
+        print(msg)
+        self.memory[new_name] = parsed
 
     def process_operation(self, new_name, raw_expr):
         var, operation = clean_split(raw_expr, '->')
