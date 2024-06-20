@@ -70,6 +70,19 @@ class Terminal:
         print('\nBye!')
         self.finish = True
 
+    def load_file(self, filename):
+        try:
+            with open(filename) as file:
+                contents = file.readlines()
+                for line in contents:
+                    definition = self.process_def(line)
+                    if definition is None:
+                        continue
+                    new_name, raw_expr = definition
+                    self.add_definition(new_name, raw_expr)
+        except Exception as e:
+            print("Error: %s" % e)
+
     @property
     def formatter(self):
         default = self.formatters['pretty']
@@ -228,19 +241,6 @@ class Terminal:
                     self.memory[new_name] = new_expr
                     return
             print("Error: unknown operation: '%s' Type '?' for help" % operation)
-
-    def load_file(self, filename):
-        try:
-            with open(filename) as file:
-                contents = file.readlines()
-                for line in contents:
-                    definition = self.process_def(line)
-                    if definition is None:
-                        continue
-                    new_name, raw_expr = definition
-                    self.add_definition(new_name, raw_expr)
-        except Exception as e:
-            print("Error: %s" % e)
 
     def greetings(self):
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
