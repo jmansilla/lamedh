@@ -83,6 +83,23 @@ class Terminal:
         except Exception as e:
             print("Error: %s" % e)
 
+    def dump_memory(self, filename=None):
+        print("Dumping expressions saved in memory", end='')
+        if filename:
+            open_file = open(filename, 'w')
+            print(f' to file "{filename}"')
+            dump_formatter = self.formatters['normal']  # needs to be easy to parse
+        else:
+            open_file = sys.stdout
+            print(":")
+            dump_formatter = self.formatter
+        for k, v in self.memory.items():
+            if k in self.HIDDEN_NAMES:
+                continue
+            print(f"{k} = {dump_formatter(v)}", file=open_file)
+        if open_file is not sys.stdout:
+            open_file.close()
+
     @property
     def formatter(self):
         default = self.formatters['pretty']
@@ -146,23 +163,6 @@ class Terminal:
         else:
             # creating a new expression, and saving it as new_name
             self.parse_expr(new_name, expr)
-
-    def dump_memory(self, filename=None):
-        print("Dumping expressions saved in memory", end='')
-        if filename:
-            open_file = open(filename, 'w')
-            print(f' to file "{filename}"')
-            dump_formatter = self.formatters['normal']  # needs to be easy to parse
-        else:
-            open_file = sys.stdout
-            print(":")
-            dump_formatter = self.formatter
-        for k, v in self.memory.items():
-            if k in self.HIDDEN_NAMES:
-                continue
-            print(f"{k} = {dump_formatter(v)}", file=open_file)
-        if open_file is not sys.stdout:
-            open_file.close()
 
     def process_cmd(self, cmd):
         if '=' in cmd:
