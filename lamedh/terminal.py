@@ -78,29 +78,29 @@ class Terminal:
         self.greetings()
         while True:
             try:
-                cmd = self.autocomplete_prompt()
+                line = self.autocomplete_prompt()
             except EOFError:
                 print('\nBye!')
                 break
-            cmd = cmd.strip()
-            if cmd == "?":
+            line = line.strip()
+            if line == "?":
                 self.help()
-            elif cmd == "exit" or cmd == "quit":
+            elif line == "exit" or line == "quit":
                 print('Bye!')
                 break
-            elif cmd.startswith("dump") and '=' not in cmd:
-                filename = cmd[4:].strip()  # may be empty string, meaning no filename
+            elif line.startswith("dump") and '=' not in line:
+                filename = line[4:].strip()  # may be empty string, meaning no filename
                 self.dump_memory(filename)
-            elif cmd.startswith("load ") and '=' not in cmd:  # load <filename>
-                filename = cmd[5:].strip()
+            elif line.startswith("load ") and '=' not in line:  # load <filename>
+                filename = line[5:].strip()
                 self.process_file(filename)
             elif (cmd.startswith("del") or cmd.startswith("delete")) and '=' not in cmd:
                 name_to_del = cmd.split()[1:]
                 self.del_name(name_to_del)
             else:
-                if not cmd:
+                if not line:
                     continue
-                self.process_cmd(cmd)
+                self.process_cmd(line)
 
     def process_def(self, definition):
         # FIXME: it seems that clean_split doesn't raise any exception.
