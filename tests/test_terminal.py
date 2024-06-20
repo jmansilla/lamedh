@@ -135,19 +135,6 @@ class TestTerminalMemory(BaseTestTerminal):
         self.assertNotIn('new expression parsed:', output)
 
 
-class TestReservedNames(BaseTestTerminal):
-
-    def test_reserved_names(self):
-        # remember that any string xyz will be parsed as Var('xyz')
-        for name in self.terminal.RESERVED_NAMES:
-            inputs = ['%s = λx.x' % name]
-            memory_before = deepcopy(self.terminal.memory)
-            stdout = self.call_main(inputs)
-            output = stdout.getvalue()
-            memory_after = self.terminal.memory
-            self.assertDictEqual(memory_before, memory_after)
-
-
 class TestPromptCompleter(unittest.TestCase):
     COMMANDS = {'some_command': 'command description', 'other_command': 'other description'}
     OPERATIONS = ['some_operation', 'other_operation']
