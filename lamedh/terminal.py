@@ -144,7 +144,7 @@ class Terminal:
                 arguments_string = line[len(cmd):].strip()
                 command_func(arguments_string)
             else:
-                self.process_cmd(line)
+                self.process_line(line)
 
     def process_def(self, definition):
         # FIXME: it seems that clean_split doesn't raise any exception.
@@ -171,15 +171,18 @@ class Terminal:
             # creating a new expression, and saving it as new_name
             self.parse_expr(new_name, expr)
 
-    def process_cmd(self, cmd):
-        if '=' in cmd:
-            definition = self.process_def(cmd)
+    def process_line(self, line):
+        # One of 2 options:
+        #  a) new expression is defined
+        #  b) operation over some expression is invoked
+        if '=' in line:
+            definition = self.process_def(line)
             if definition is None:
                 return
             new_name, raw_expr = definition
         else:
             new_name = self.DEFAULT_NAME
-            raw_expr = cmd
+            raw_expr = line
         if not new_name:
             print("Error: expression name can't be empty")
             return
