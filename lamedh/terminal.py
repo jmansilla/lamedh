@@ -100,9 +100,9 @@ class Terminal:
                 self.dump_memory(filename)
             elif line.startswith("load ") and '=' not in line:  # load <filename>
                 filename = line[5:].strip()
-                self.process_file(filename)
-            elif (cmd.startswith("del") or cmd.startswith("delete")) and '=' not in cmd:
-                name_to_del = cmd.split()[1:]
+                self.load_file(filename)
+            elif (line.startswith("del") or line.startswith("delete")) and '=' not in line:
+                name_to_del = line.split()[1:]
                 self.del_name(name_to_del)
             else:
                 if not line:
@@ -229,7 +229,7 @@ class Terminal:
                     return
             print("Error: unknown operation: '%s' Type '?' for help" % operation)
 
-    def process_file(self, filename):
+    def load_file(self, filename):
         try:
             with open(filename) as file:
                 contents = file.readlines()
@@ -245,7 +245,7 @@ class Terminal:
     def greetings(self):
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
         print("Type ? for help.")
-    
+
     def del_name(self, name_to_del):
         if not name_to_del:
             print("Missing names to delete")
@@ -256,8 +256,8 @@ class Terminal:
                     print("{} was deleted".format(item))
                 else:
                     print("{} did not exists".format(item))
-    
-    
+
+
 class NormalFormatter:
     indent = '|  '
 
