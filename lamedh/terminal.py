@@ -10,7 +10,17 @@ from prompt_toolkit.history import FileHistory
 from lamedh.expr import Expr
 from lamedh.visitors import SubstituteVisitor
 
-COMMANDS = {"?": "shows help", "exit": "quit and exit"}
+# mapping of command-name: command function to call
+COMMANDS = {
+    '?': 'help',
+    'help': 'help',
+    'exit': 'exit',
+    'quit': 'exit',
+    'dump': 'dump_memory',
+    'load': 'load_file',
+    'del': 'del_name',
+    'delete': 'del_name',
+}
 
 OPERATION_NAMES = ["some_operation", "other_operation"]
 
@@ -52,7 +62,7 @@ class Terminal:
     OUT = "OUT: "
     DEFAULT_NAME = '_'
     HIDDEN_NAMES = [DEFAULT_NAME, 'FORMAT']
-    RESERVED_NAMES = ['?', 'exit', 'quit', 'dump', 'load', 'del', 'delete']
+    RESERVED_NAMES = list(COMMANDS.keys())
 
     def __init__(self):
         self.memory = {}
@@ -63,14 +73,17 @@ class Terminal:
         }
         self.completer = PromptCompleter(COMMANDS, OPERATION_NAMES, self.memory)
 
-    def help(self):
+    def help(self, arguments_string):
         print(HELP)
 
-    def exit(self):
+    def exit(self, arguments_string):
         print('\nBye!')
         self.finish = True
 
     def load_file(self, filename):
+        if not os.path.isfile(filename):
+            print("Error: File not found: '%s'" % filename)
+            return
         try:
             with open(filename) as file:
                 contents = file.readlines()
@@ -121,22 +134,16 @@ class Terminal:
                 print('\nBye!')
                 break
             line = line.strip()
-            if line == "?":
-                self.help()
-            elif line == "exit" or line == "quit":
-                self.exit()
-            elif line.startswith("dump") and '=' not in line:
-                filename = line[4:].strip()  # may be empty string, meaning no filename
-                self.dump_memory(filename)
-            elif line.startswith("load ") and '=' not in line:  # load <filename>
-                filename = line[5:].strip()
-                self.load_file(filename)
-            elif (line.startswith("del") or line.startswith("delete")) and '=' not in line:
-                name_to_del = line.split()[1:]
-                self.del_name(name_to_del)
+            if not line:
+                continue
+
+            first_word = line.split()[0]  # may be the entire command, may be something else
+            if first_word in COMMANDS:
+                cmd = first_word
+                command_func = getattr(self, COMMANDS[first_word])
+                arguments_string = line[len(cmd):].strip()
+                command_func(arguments_string)
             else:
-                if not line:
-                    continue
                 self.process_cmd(line)
 
     def process_def(self, definition):

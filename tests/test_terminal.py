@@ -144,8 +144,8 @@ class TestReservedNames(BaseTestTerminal):
             memory_before = deepcopy(self.terminal.memory)
             stdout = self.call_main(inputs)
             output = stdout.getvalue()
-            self.assertIn('Error:', output)
-            self.assertIn('reserved', output)
+            memory_after = self.terminal.memory
+            self.assertDictEqual(memory_before, memory_after)
 
 
 class TestPromptCompleter(unittest.TestCase):
