@@ -66,6 +66,10 @@ class Terminal:
     def help(self):
         print(HELP)
 
+    def exit(self):
+        print('\nBye!')
+        self.finish = True
+
     @property
     def formatter(self):
         default = self.formatters['pretty']
@@ -79,7 +83,8 @@ class Terminal:
 
     def main(self):
         self.greetings()
-        while True:
+        self.finish = False
+        while not self.finish:
             try:
                 line = self.autocomplete_prompt()
             except EOFError:
@@ -89,8 +94,7 @@ class Terminal:
             if line == "?":
                 self.help()
             elif line == "exit" or line == "quit":
-                print('Bye!')
-                break
+                self.exit()
             elif line.startswith("dump") and '=' not in line:
                 filename = line[4:].strip()  # may be empty string, meaning no filename
                 self.dump_memory(filename)
