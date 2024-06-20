@@ -4,8 +4,15 @@ import re
 import readline
 import sys
 
+from prompt_toolkit import prompt
+from prompt_toolkit.completion import FuzzyWordCompleter
+
 from lamedh.expr import Expr
 from lamedh.visitors import SubstituteVisitor
+
+COMMANDS = {"?": "shows help", "exit": "quit and exit"}
+
+OPPERATION_NAMES = ["some_operation"]
 
 
 histfile = os.path.join(os.path.expanduser("~"), ".lamedh_history")
@@ -45,6 +52,7 @@ class Terminal:
             'pretty': PrettyFormatter(),
             'clean': CleanFormatter()
         }
+        self.autocomplete_words = list(COMMANDS) + OPPERATION_NAMES
 
     @property
     def formatter(self):
@@ -52,11 +60,16 @@ class Terminal:
         name = str(self.memory.get('FORMAT', None))
         return self.formatters.get(name, default)
 
+    def autocomplete_prompt(self):
+        words_for_autocomplete = list(self.memory) + self.autocomplete_words
+        completer = FuzzyWordCompleter(words_for_autocomplete)
+        return prompt(self.PS1, completer=completer, complete_while_typing=True)
+
     def main(self):
         self.greetings()
         while True:
             try:
-                cmd = input(self.PS1)
+                cmd = self.autocomplete_prompt()
             except EOFError:
                 print('\nBye!')
                 break
