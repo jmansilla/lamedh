@@ -63,6 +63,9 @@ class Terminal:
         }
         self.completer = PromptCompleter(COMMANDS, OPERATION_NAMES, self.memory)
 
+    def help(self):
+        print(HELP)
+
     @property
     def formatter(self):
         default = self.formatters['pretty']
@@ -234,9 +237,6 @@ class Terminal:
                     self.add_definition(new_name, raw_expr)
         except Exception as e:
             print("Error: %s" % e)
-
-    def help(self):
-        print(HELP)
 
     def greetings(self):
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
