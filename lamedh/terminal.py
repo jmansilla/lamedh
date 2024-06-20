@@ -88,10 +88,9 @@ class Terminal:
             with open(filename) as file:
                 contents = file.readlines()
                 for line in contents:
-                    definition = self.process_def(line)
-                    if definition is None:
+                    if '=' not in line:
                         continue
-                    new_name, raw_expr = definition
+                    new_name, raw_expr = clean_split(line, '=')
                     self.add_definition(new_name, raw_expr)
         except Exception as e:
             print("Error: %s" % e)
@@ -146,15 +145,6 @@ class Terminal:
             else:
                 self.process_line(line)
 
-    def process_def(self, definition):
-        # FIXME: it seems that clean_split doesn't raise any exception.
-        try:
-            new_name, raw_expr = clean_split(definition, '=')
-        except ValueError:
-            print("Error: expression can have at most one '=', got '%s' instead" % definition.count('='))
-            return
-        return new_name, raw_expr
-
     def add_definition(self, new_name, expr):
         if new_name in self.RESERVED_NAMES:
             print("Error: name '%s' is reserved" % new_name)
@@ -176,10 +166,7 @@ class Terminal:
         #  a) new expression is defined
         #  b) operation over some expression is invoked
         if '=' in line:
-            definition = self.process_def(line)
-            if definition is None:
-                return
-            new_name, raw_expr = definition
+            new_name, raw_expr = clean_split(line, '=')
         else:
             new_name = self.DEFAULT_NAME
             raw_expr = line
