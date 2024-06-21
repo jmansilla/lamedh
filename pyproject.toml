@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "lamedh"
+version = "0.2.0"
+description = "Lambda Reduction and Evaluation"
+authors = ["Javier Mansilla <javimansilla@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/lamedh.git"
+packages = [
+    { include = "lamedh" },
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.8"
+lark = "^1.1.9"
+prompt-toolkit = "^3.0.47"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.2"
+
+
+[tool.poetry.scripts]
+lamedh = 'lamedh.cli:run'
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
