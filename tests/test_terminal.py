@@ -1,7 +1,7 @@
 from copy import deepcopy
 from io import StringIO
 import tempfile
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import unittest
 
 from prompt_toolkit.document import Document
@@ -20,7 +20,10 @@ class BaseTestTerminal(unittest.TestCase):
             # prevent never ending loop
             inputs = inputs + ['exit']  # avoiding modify received inputs
         with patch('lamedh.terminal.session.prompt', side_effect=inputs):
-            self.terminal.main()
+            with patch('os.get_terminal_size') as term_size:
+                # there is an issue with get_terminal_size and pytest
+                term_size.return_value = (80, 24)
+                self.terminal.main()
         return stdout
 
     def last_OUT(self, stdout):
@@ -243,7 +246,7 @@ class TestOperationsToExpressions(BaseTestTerminal):
     def test_provide_max_steps_to_operation(self):
         # just test that the terminal does not crash
         name = 'name'
-        expr_txt = '(λx.x) Z'
+        expr_txt = '(λx.(x x)) (λx.x)'
         self.call_main([f'{name} = {expr_txt}'])
         inputs = ['%s -> evalN(10)' % name]
         stdout = self.call_main(inputs)
