@@ -10,9 +10,22 @@ from prompt_toolkit.history import FileHistory
 from lamedh.expr import Expr
 from lamedh.visitors import SubstituteVisitor
 
-COMMANDS = {"?": "shows help", "exit": "quit and exit"}
+# Commands are instructions that users give to the Terminal
+#    this dict defines 'command-name': 'function-to-call'
+COMMANDS = {
+    '?': 'help',
+    'help': 'help',
+    'exit': 'exit',
+    'quit': 'exit',
+    'dump': 'dump_memory',
+    'load': 'load_file',
+    'del': 'del_name',
+    'delete': 'del_name',
+}
 
-OPERATION_NAMES = ["some_operation", "other_operation"]
+# Operations are (as the name says) actions that user want to be applied to a given
+# Lambda expression. Like evaluate, display, etc
+OPERATIONS = ['show', 'as_tree', 'goto_normal_form', 'evalN', 'evalE']
 
 
 histfile = os.path.join(os.path.expanduser("~"), ".lamedh_history")
@@ -48,11 +61,10 @@ class PromptCompleter(Completer):
 
 
 class Terminal:
-    PS1 = "λh> "
     OUT = "OUT: "
     DEFAULT_NAME = '_'
     HIDDEN_NAMES = [DEFAULT_NAME, 'FORMAT']
-    RESERVED_NAMES = ['?', 'exit', 'quit', 'dump', 'load', 'del', 'delete']
+    RESERVED_NAMES = list(COMMANDS.keys()) + list(OPERATIONS)
 
     def __init__(self):
         self.memory = {}
@@ -61,71 +73,29 @@ class Terminal:
             'pretty': PrettyFormatter(),
             'clean': CleanFormatter()
         }
-        self.completer = PromptCompleter(COMMANDS, OPERATION_NAMES, self.memory)
+        self.completer = PromptCompleter(COMMANDS, OPERATIONS, self.memory)
 
-    @property
-    def formatter(self):
-        default = self.formatters['pretty']
-        name = str(self.memory.get('FORMAT', None))
-        return self.formatters.get(name, default)
+    def help(self, arguments_string):
+        print(HELP)
 
-    def autocomplete_prompt(self):
-        return session.prompt(
-            self.PS1, completer=self.completer, complete_while_typing=True, auto_suggest=AutoSuggestFromHistory()
-        )
+    def exit(self, arguments_string):
+        print('\nBye!')
+        self.finish = True
 
-    def main(self):
-        self.greetings()
-        while True:
-            try:
-                cmd = self.autocomplete_prompt()
-            except EOFError:
-                print('\nBye!')
-                break
-            cmd = cmd.strip()
-            if cmd == "?":
-                self.help()
-            elif cmd == "exit" or cmd == "quit":
-                print('Bye!')
-                break
-            elif cmd.startswith("dump") and '=' not in cmd:
-                filename = cmd[4:].strip()  # may be empty string, meaning no filename
-                self.dump_memory(filename)
-            elif cmd.startswith("load ") and '=' not in cmd:  # load <filename>
-                filename = cmd[5:].strip()
-                self.process_file(filename)
-            elif (cmd.startswith("del") or cmd.startswith("delete")) and '=' not in cmd:
-                name_to_del = cmd.split()[1:]
-                self.del_name(name_to_del)
-            else:
-                if not cmd:
-                    continue
-                self.process_cmd(cmd)
-
-    def process_def(self, definition):
-        # FIXME: it seems that clean_split doesn't raise any exception.
+    def load_file(self, filename):
+        if not os.path.isfile(filename):
+            print("Error: File not found: '%s'" % filename)
+            return
         try:
-            new_name, raw_expr = clean_split(definition, '=')
-        except ValueError:
-            print("Error: expression can have at most one '=', got '%s' instead" % definition.count('='))
-            return
-        return new_name, raw_expr
-
-    def add_definition(self, new_name, expr):
-        if new_name in self.RESERVED_NAMES:
-            print("Error: name '%s' is reserved" % new_name)
-            return
-        if expr in self.memory:
-            # actually "expr" is a name in memory and not an expression
-            if new_name != self.DEFAULT_NAME:
-                # creating a new name for existing expression
-                self.memory[new_name] = self.memory[expr]
-            else:
-                # invoking print for existing expression
-                print(self.OUT, self.formatter(self.memory[expr]))
-        else:
-            # creating a new expression, and saving it as new_name
-            self.parse_expr(new_name, expr)
+            with open(filename) as file:
+                contents = file.readlines()
+                for line in contents:
+                    if '=' not in line:
+                        continue
+                    new_name, raw_expr = clean_split(line, '=')
+                    self.add_definition(new_name, raw_expr)
+        except Exception as e:
+            print("Error: %s" % e)
 
     def dump_memory(self, filename=None):
         print("Dumping expressions saved in memory", end='')
@@ -144,15 +114,64 @@ class Terminal:
         if open_file is not sys.stdout:
             open_file.close()
 
-    def process_cmd(self, cmd):
-        if '=' in cmd:
-            definition = self.process_def(cmd)
-            if definition is None:
-                return
-            new_name, raw_expr = definition
+    @property
+    def formatter(self):
+        default = self.formatters['pretty']
+        name = str(self.memory.get('FORMAT', None))
+        return self.formatters.get(name, default)
+
+    def autocomplete_prompt(self):
+        return session.prompt(
+            self.formatter.PS1, completer=self.completer, complete_while_typing=True, auto_suggest=AutoSuggestFromHistory()
+        )
+
+    def main(self):
+        self.greetings()
+        self.finish = False
+        while not self.finish:
+            try:
+                line = self.autocomplete_prompt()
+            except EOFError:
+                print('\nBye!')
+                break
+            line = line.strip()
+            if not line:
+                continue
+
+            first_word = line.split()[0]  # may be the entire command, may be something else
+            if first_word in COMMANDS:
+                cmd = first_word
+                command_func = getattr(self, COMMANDS[first_word])
+                arguments_string = line[len(cmd):].strip()
+                command_func(arguments_string)
+            else:
+                self.process_line(line)
+
+    def add_definition(self, new_name, expr):
+        if new_name in self.RESERVED_NAMES:
+            print("Error: name '%s' is reserved" % new_name)
+            return
+        if expr in self.memory:
+            # actually "expr" is a name in memory and not an expression
+            if new_name != self.DEFAULT_NAME:
+                # creating a new name for existing expression
+                self.memory[new_name] = self.memory[expr]
+            else:
+                # invoking print for existing expression
+                print(self.OUT, self.formatter(self.memory[expr]))
+        else:
+            # creating a new expression, and saving it as new_name
+            self.parse_expr(new_name, expr)
+
+    def process_line(self, line):
+        # One of 2 options:
+        #  a) new expression is defined
+        #  b) operation over some expression is invoked
+        if '=' in line:
+            new_name, raw_expr = clean_split(line, '=')
         else:
             new_name = self.DEFAULT_NAME
-            raw_expr = cmd
+            raw_expr = line
         if not new_name:
             print("Error: expression name can't be empty")
             return
@@ -164,20 +183,20 @@ class Terminal:
             self.add_definition(new_name, raw_expr)
 
     def parse_expr(self, new_name, raw_expr):
-            try:
-                parsed = Expr.from_string(raw_expr)
-                mapping = {k: v.clone() for k, v in self.memory.items() if k not in self.HIDDEN_NAMES}
-                parsed = SubstituteVisitor().visit(parsed, mapping)
-            except Exception as e:
-                print("Parsing Lambda Expr Error: %s" % e)
-                return
-            msg = 'new expression parsed:'
-            if new_name != self.DEFAULT_NAME:
-                msg += ' %s = %s' % (new_name, self.formatter(parsed))
-            else:
-                msg += ' %s' % self.formatter(parsed)
-            print(msg)
-            self.memory[new_name] = parsed
+        try:
+            parsed = Expr.from_string(raw_expr)
+            mapping = {k: v.clone() for k, v in self.memory.items() if k not in self.HIDDEN_NAMES}
+            parsed = SubstituteVisitor().visit(parsed, mapping)
+        except Exception as e:
+            print("Parsing Lambda Expr Error: %s" % e)
+            return
+        msg = 'new expression parsed:'
+        if new_name != self.DEFAULT_NAME:
+            msg += ' %s = %s' % (new_name, self.formatter(parsed))
+        else:
+            msg += ' %s' % self.formatter(parsed)
+        print(msg)
+        self.memory[new_name] = parsed
 
     def process_operation(self, new_name, raw_expr):
         var, operation = clean_split(raw_expr, '->')
@@ -190,58 +209,46 @@ class Terminal:
             return
         stored_expr = self.memory[var]
 
-        if operation == 'show()' or operation == 'show':
+        argument = ''
+        if '(' in operation:
+            # arguments provided to operation.
+            operation, argument = operation.split('(', 1)
+            argument = argument.strip('() ')
+
+        if operation not in OPERATIONS:
+            print("Error: unknown operation: '%s' Type '?' for help" % operation)
+            return
+
+        if operation == 'show':
             print(self.OUT, self.formatter(stored_expr))
-        elif operation == 'as_tree()' or operation == 'as_tree':
+        elif operation == 'as_tree':
             print(self.OUT, self.formatter.as_tree(repr(stored_expr)))
         else:
-            for prefix in ['evalE', 'evalN', 'goto_normal_form']:
-                if operation.startswith(prefix):
-                    # option a, ends in "()", option b, ends in "(<number>)"
-                    func = getattr(stored_expr, prefix)
-                    if operation == prefix or operation == prefix+'()':
-                        max_steps = DEFAULT_NUMBER_OF_STEPS
-                    elif operation.endswith(')'):
-                        number_str = operation[len(prefix)+1:-1]
-                        try:
-                            max_steps = int(number_str)
-                        except ValueError:
-                            max_steps = None
-                    if not max_steps:
-                        print("Error: unknown operation: '%s' Type '?' for help" % operation)
-                    # Let's execute the operation
-                    print(self.OUT)
-                    try:
-                        new_expr = func(max_steps=max_steps, verbose=1, formatter=self.formatter)
-                    except Exception as e:
-                        print("Error occured when running operation '%s':" % prefix)
-                        print("  %s: %s" % (type(e).__name__, e))
-                        return
-                    print(self.OUT, self.formatter(new_expr))
-                    self.memory[new_name] = new_expr
+            max_steps = DEFAULT_NUMBER_OF_STEPS
+            if argument:
+                # try to parse the custom number of steps provided
+                try:
+                    max_steps = int(argument)
+                except ValueError:
+                    print("Error: bad argument '%s' for operation '%s'. Type '?' for help"
+                           % (operation, argument))
                     return
-            print("Error: unknown operation: '%s' Type '?' for help" % operation)
 
-    def process_file(self, filename):
-        try:
-            with open(filename) as file:
-                contents = file.readlines()
-                for line in contents:
-                    definition = self.process_def(line)
-                    if definition is None:
-                        continue
-                    new_name, raw_expr = definition
-                    self.add_definition(new_name, raw_expr)
-        except Exception as e:
-            print("Error: %s" % e)
-
-    def help(self):
-        print(HELP)
+            print(self.OUT)
+            func = getattr(stored_expr, operation)
+            try:
+                new_expr = func(max_steps=max_steps, verbose=1, formatter=self.formatter)
+            except Exception as e:
+                print("Error occured when running operation '%s':" % operation)
+                print("  %s: %s" % (type(e).__name__, e))
+                return
+            print(self.OUT, self.formatter(new_expr))
+            self.memory[new_name] = new_expr
 
     def greetings(self):
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
         print("Type ? for help.")
-    
+
     def del_name(self, name_to_del):
         if not name_to_del:
             print("Missing names to delete")
@@ -252,9 +259,10 @@ class Terminal:
                     print("{} was deleted".format(item))
                 else:
                     print("{} did not exists".format(item))
-    
-    
+
+
 class NormalFormatter:
+    PS1 = "λh> "
     indent = '|  '
 
     def __call__(self, expr):

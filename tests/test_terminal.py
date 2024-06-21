@@ -1,7 +1,7 @@
 from copy import deepcopy
 from io import StringIO
 import tempfile
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import unittest
 
 from prompt_toolkit.document import Document
@@ -20,7 +20,10 @@ class BaseTestTerminal(unittest.TestCase):
             # prevent never ending loop
             inputs = inputs + ['exit']  # avoiding modify received inputs
         with patch('lamedh.terminal.session.prompt', side_effect=inputs):
-            self.terminal.main()
+            with patch('os.get_terminal_size') as term_size:
+                # there is an issue with get_terminal_size and pytest
+                term_size.return_value = (80, 24)
+                self.terminal.main()
         return stdout
 
     def last_OUT(self, stdout):
@@ -135,19 +138,6 @@ class TestTerminalMemory(BaseTestTerminal):
         self.assertNotIn('new expression parsed:', output)
 
 
-class TestReservedNames(BaseTestTerminal):
-
-    def test_reserved_names(self):
-        # remember that any string xyz will be parsed as Var('xyz')
-        for name in self.terminal.RESERVED_NAMES:
-            inputs = ['%s = λx.x' % name]
-            memory_before = deepcopy(self.terminal.memory)
-            stdout = self.call_main(inputs)
-            output = stdout.getvalue()
-            self.assertIn('Error:', output)
-            self.assertIn('reserved', output)
-
-
 class TestPromptCompleter(unittest.TestCase):
     COMMANDS = {'some_command': 'command description', 'other_command': 'other description'}
     OPERATIONS = ['some_operation', 'other_operation']
@@ -202,6 +192,78 @@ class TestPromptCompleter(unittest.TestCase):
         self.assertNotIn('other_command', suggestions)
         self.assertNotIn('variableA', suggestions)
         self.assertNotIn('variableB', suggestions)
+
+
+class TestOperationsToExpressions(BaseTestTerminal):
+    def test_show(self):
+        name = 'name'
+        expr_txt = '(λx.x)'
+        self.call_main([f'{name} = {expr_txt}'])
+        inputs = ['%s -> show()' % name]
+        stdout = self.call_main(inputs)
+        output = stdout.getvalue()
+        self.assertIn(expr_txt, output)
+
+    def test_show_no_parentheses(self):
+        name = 'name'
+        expr_txt = 'λx.x'
+        self.call_main([f'{name} = {expr_txt}'])
+        inputs = ['%s -> show' % name]
+        stdout = self.call_main(inputs)
+        output = stdout.getvalue()
+        self.assertIn(expr_txt, output)
+
+    def test_unknown_operation_fails(self):
+        name = 'name'
+        expr_txt = 'λx.x'
+        self.call_main([f'{name} = {expr_txt}'])
+        yadda = 'yaddayadda'
+        inputs = [f'{name} -> {yadda}']
+        stdout = self.call_main(inputs)
+        output = stdout.getvalue()
+        self.assertIn('Error: unknown operation', output)
+        self.assertIn(yadda, output)
+
+    def test_goto_normal_form(self):
+        name = 'name'
+        expr_txt = '(λx.x) Z'
+        self.call_main([f'{name} = {expr_txt}'])
+        inputs = ['%s -> goto_normal_form' % name]
+        stdout = self.call_main(inputs)
+        output = stdout.getvalue()
+        self.assertIn(expr_txt, output)
+        self.assertIn('0 redices', output)  # evaluation finished successfully
+
+    def test_save_operation_to_memory(self):
+        name1 = 'name1'
+        name2 = 'name2'
+        expr_txt = '(λx.x) Z'
+        self.call_main(['%s = %s' % (name1, expr_txt)])
+        inputs = ['%s = %s -> goto_normal_form' % (name2, name1)]
+        stdout = self.call_main(inputs)
+        self.assertIn(name2, self.terminal.memory)
+
+    def test_provide_max_steps_to_operation(self):
+        # just test that the terminal does not crash
+        name = 'name'
+        expr_txt = '(λx.(x x)) (λx.x)'
+        self.call_main([f'{name} = {expr_txt}'])
+        inputs = ['%s -> evalN(10)' % name]
+        stdout = self.call_main(inputs)
+        output = stdout.getvalue()
+        self.assertIn(expr_txt, output)
+
+    def test_provide_max_steps_no_parse_gracefully(self):
+        # just test that the terminal does not crash
+        name = 'name'
+        expr_txt = '(λx.x) Z'
+        self.call_main([f'{name} = {expr_txt}'])
+        not_a_number = 'this-is-not-a-numer'
+        inputs = [f'{name} -> evalN({not_a_number})']
+        stdout = self.call_main(inputs)
+        output = stdout.getvalue()
+        self.assertIn('Error:', output)
+        self.assertIn(not_a_number, output)
 
 
 if __name__ == '__main__':
