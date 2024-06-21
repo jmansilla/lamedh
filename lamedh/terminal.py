@@ -38,11 +38,11 @@ class PromptCompleter(Completer):
         self.memory = memory
 
     def get_completions(self, document, complete_event):
-        if "-> " in document.text:
+        if self.COMMAND_SEPARATOR in document.text:
             autocomplete_words = self.operations
         else:
             autocomplete_words = list(self.memory) + list(self.commands)
-            autocomplete_words.append("--> ")
+            autocomplete_words.append(self.COMMAND_SEPARATOR)
 
         return FuzzyWordCompleter(autocomplete_words).get_completions(document, complete_event)
 
@@ -61,6 +61,7 @@ class Terminal:
             'pretty': PrettyFormatter(),
             'clean': CleanFormatter()
         }
+        self.completer = PromptCompleter(COMMANDS, OPERATION_NAMES, self.memory)
 
     @property
     def formatter(self):
@@ -69,9 +70,8 @@ class Terminal:
         return self.formatters.get(name, default)
 
     def autocomplete_prompt(self):
-        completer = PromptCompleter(COMMANDS, OPERATION_NAMES, self.memory)
         return session.prompt(
-            self.PS1, completer=completer, complete_while_typing=True, auto_suggest=AutoSuggestFromHistory()
+            self.PS1, completer=self.completer, complete_while_typing=True, auto_suggest=AutoSuggestFromHistory()
         )
 
     def main(self):
