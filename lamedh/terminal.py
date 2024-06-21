@@ -5,14 +5,14 @@ import readline
 import sys
 
 from prompt_toolkit import prompt
-from prompt_toolkit.completion import FuzzyWordCompleter
+from prompt_toolkit.completion import Completer, Completion, FuzzyWordCompleter
 
 from lamedh.expr import Expr
 from lamedh.visitors import SubstituteVisitor
 
 COMMANDS = {"?": "shows help", "exit": "quit and exit"}
 
-OPPERATION_NAMES = ["some_operation"]
+OPPERATION_NAMES = ["some_operation", "other_operation"]
 
 
 histfile = os.path.join(os.path.expanduser("~"), ".lamedh_history")
@@ -38,6 +38,23 @@ HELP = open(os.path.join(__location__, 'help.txt')).read()
 HELP = HELP % DEFAULT_NUMBER_OF_STEPS
 
 
+class PromptCompleter(Completer):
+    COMMAND_SEPARATOR = "-> "
+    def __init__(self, commands, operations, memory):
+        self.commands = commands
+        self.operations = operations
+        self.memory = memory
+
+    def get_completions(self, document, complete_event):
+        if "-> " in document.text:
+            autocomplete_words = self.operations
+        else:
+            autocomplete_words = list(self.memory) + list(self.commands)
+            autocomplete_words.append("--> ")
+
+        return FuzzyWordCompleter(autocomplete_words).get_completions(document, complete_event)
+
+
 class Terminal:
     PS1 = "λh> "
     OUT = "OUT: "
@@ -52,7 +69,6 @@ class Terminal:
             'pretty': PrettyFormatter(),
             'clean': CleanFormatter()
         }
-        self.autocomplete_words = list(COMMANDS) + OPPERATION_NAMES
 
     @property
     def formatter(self):
@@ -61,8 +77,7 @@ class Terminal:
         return self.formatters.get(name, default)
 
     def autocomplete_prompt(self):
-        words_for_autocomplete = list(self.memory) + self.autocomplete_words
-        completer = FuzzyWordCompleter(words_for_autocomplete)
+        completer = PromptCompleter(COMMANDS, OPPERATION_NAMES, self.memory)
         return prompt(self.PS1, completer=completer, complete_while_typing=True)
 
     def main(self):
