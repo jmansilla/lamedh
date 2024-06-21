@@ -32,6 +32,6 @@ poetry run pytest
 To open the interactive `lamedh` console on your terminal, simply type
 
 ```
-poetry run lamedh
+lamedh
 ```
 ![faster](https://github.com/jmansilla/lamedh/assets/488675/c5e52d19-b248-43b9-a125-7abb35966c71)
