@@ -1,11 +1,11 @@
-import atexit
 import os
 import re
-import readline
 import sys
 
-from prompt_toolkit import prompt
-from prompt_toolkit.completion import Completer, Completion, FuzzyWordCompleter
+from prompt_toolkit import PromptSession
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.completion import Completer, FuzzyWordCompleter
+from prompt_toolkit.history import FileHistory
 
 from lamedh.expr import Expr
 from lamedh.visitors import SubstituteVisitor
@@ -16,15 +16,7 @@ OPERATION_NAMES = ["some_operation", "other_operation"]
 
 
 histfile = os.path.join(os.path.expanduser("~"), ".lamedh_history")
-try:
-    readline.read_history_file(histfile)
-    # default history len is -1 (infinite), which may grow unruly
-    readline.set_history_length(1000)
-except FileNotFoundError:
-    pass
-
-atexit.register(readline.write_history_file, histfile)
-
+session = PromptSession(history=FileHistory(histfile))
 
 
 def clean_split(txt, delimiter):
@@ -78,7 +70,9 @@ class Terminal:
 
     def autocomplete_prompt(self):
         completer = PromptCompleter(COMMANDS, OPERATION_NAMES, self.memory)
-        return prompt(self.PS1, completer=completer, complete_while_typing=True)
+        return session.prompt(
+            self.PS1, completer=completer, complete_while_typing=True, auto_suggest=AutoSuggestFromHistory()
+        )
 
     def main(self):
         self.greetings()
