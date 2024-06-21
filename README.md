@@ -11,29 +11,27 @@ The Phoenician letter [Lamedh](https://en.wikipedia.org/wiki/Lamedh), based on a
 After cloning this repository, change directory inside the repo folder. Then type on your terminal
 
 ```
-python setup.py install
+poetry install
 ```
 
 ### Install in development mode
 
 Let's you edit the source code and see the changes reflected in the `lamedh` command
 ```
-python setup.py develop
+poetry install
 ```
 
 To run tests
 
-`python -m pytest`
+```
+poetry run pytest
+```
 
 ## Usage
 
 To open the interactive `lamedh` console on your terminal, simply type
 
 ```
-lamedh
+poetry run lamedh
 ```
 ![faster](https://github.com/jmansilla/lamedh/assets/488675/c5e52d19-b248-43b9-a125-7abb35966c71)
-
-
-
-
