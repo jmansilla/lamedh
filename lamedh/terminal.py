@@ -249,16 +249,17 @@ class Terminal:
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
         print("Type ? for help.")
 
-    def del_name(self, name_to_del):
-        if not name_to_del:
+    def del_name(self, names_to_del):
+        if not names_to_del:
             print("Missing names to delete")
         else:
-            for item in name_to_del:
+            names = clean_split(names_to_del, ' ')
+            for item in names:
                 if item in self.memory:
                     del self.memory[item]
                     print("{} was deleted".format(item))
                 else:
-                    print("{} did not exists".format(item))
+                    print("'{}' did not exists".format(item))
 
 
 class NormalFormatter:

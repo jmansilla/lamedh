@@ -137,6 +137,26 @@ class TestTerminalMemory(BaseTestTerminal):
         self.assertIn('Error:', output)
         self.assertNotIn('new expression parsed:', output)
 
+    def test_delete_name_from_memory(self):
+        name = 'some_name'
+        expr = '(λx.x)'
+        self.call_main(['%s = %s' % (name, expr)])
+        self.call_main(['del %s' % name])
+        self.assertNotIn(name, self.terminal.memory)
+
+    def test_delete_several_names(self):
+        name1 = 'name1'
+        name2 = 'name2'
+        expr = '(λx.x)'
+        self.call_main(['%s = %s' % (name1, expr)])
+        self.call_main(['%s = %s' % (name2, expr)])
+        stdout = self.call_main([f'del {name1} {name2}'])
+        self.assertNotIn(name1, self.terminal.memory)
+        self.assertNotIn(name2, self.terminal.memory)
+
+    def test_delete_without_argument_fails(self):
+        stdout = self.call_main(['del'])
+        self.assertIn('Missing names', self.last_line(stdout))
 
 class TestPromptCompleter(unittest.TestCase):
     COMMANDS = {'some_command': 'command description', 'other_command': 'other description'}
