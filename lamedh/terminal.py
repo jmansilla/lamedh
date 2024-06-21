@@ -199,14 +199,16 @@ class Terminal:
         self.memory[new_name] = parsed
 
     def process_operation(self, new_name, raw_expr):
-        var, operation = clean_split(raw_expr, '->')
+        operand_expr, operation = clean_split(raw_expr, '->')
         if '->' in operation:
             print("Error: operation can't have more than one '->'")
             return
-        var = var.strip()
+        var = operand_expr.strip()
+
         if var not in self.memory:
-            print("Error: unknown expression: '%s'" % var)
-            return
+            var = self.DEFAULT_NAME
+            self.parse_expr(self.DEFAULT_NAME, operand_expr)
+            
         stored_expr = self.memory[var]
 
         argument = ''
