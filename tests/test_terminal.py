@@ -4,7 +4,9 @@ import tempfile
 from unittest.mock import patch, MagicMock
 import unittest
 
-from lamedh.terminal import Terminal, HELP
+from prompt_toolkit.document import Document
+
+from lamedh.terminal import Terminal, HELP, PromptCompleter
 
 
 class BaseTestTerminal(unittest.TestCase):
@@ -17,7 +19,7 @@ class BaseTestTerminal(unittest.TestCase):
         if 'exit' not in inputs:
             # prevent never ending loop
             inputs = inputs + ['exit']  # avoiding modify received inputs
-        with patch('builtins.input', side_effect=inputs):
+        with patch('lamedh.terminal.session.prompt', side_effect=inputs):
             self.terminal.main()
         return stdout
 
@@ -144,6 +146,62 @@ class TestReservedNames(BaseTestTerminal):
             output = stdout.getvalue()
             self.assertIn('Error:', output)
             self.assertIn('reserved', output)
+
+
+class TestPromptCompleter(unittest.TestCase):
+    COMMANDS = {'some_command': 'command description', 'other_command': 'other description'}
+    OPERATIONS = ['some_operation', 'other_operation']
+    MEMORY = {'variableA': 'valueA', 'variableB': 'valueB', 'some_variable': 'valueX'}
+
+    def get_suggestions(self, prompt_input):
+        prompt_input = Document(text=prompt_input)
+
+        return [
+            completion.text
+            for completion
+            in PromptCompleter(self.COMMANDS, self.OPERATIONS, self.MEMORY).get_completions(prompt_input, 0)
+        ]
+
+    def test_complete_empty_input(self):
+        suggestions = self.get_suggestions(prompt_input='')
+
+        # should suggest all commands and variables in memory
+        self.assertIn('some_command', suggestions)
+        self.assertIn('other_command', suggestions)
+        self.assertIn('variableA', suggestions)
+        self.assertIn('variableB', suggestions)
+
+        # shouldn't suggest any opperation
+        self.assertNotIn('some_operation', suggestions)
+        self.assertNotIn('other_operation', suggestions)
+
+    def test_complete_filter_by_input(self):
+        suggestions = self.get_suggestions(prompt_input='some')
+
+        # should suggest all commands and variables in memory that match prompt input
+        self.assertIn('some_command', suggestions)
+        self.assertIn('some_variable', suggestions)
+
+        # shouldn't suggest comands and variables in memory that don't match prompt input
+        self.assertNotIn('other_command', suggestions)
+        self.assertNotIn('variableA', suggestions)
+
+        # shouldn't suggest any opperation
+        self.assertNotIn('some_operation', suggestions)
+        self.assertNotIn('other_operation', suggestions)
+
+    def test_complete_after_arrow(self):
+        suggestions = self.get_suggestions(prompt_input='my_variable --> ')
+
+        # should suggest all the opperations
+        self.assertIn('some_operation', suggestions)
+        self.assertIn('other_operation', suggestions)
+
+        # shouldn't suggest any commands nor variables in memory
+        self.assertNotIn('some_command', suggestions)
+        self.assertNotIn('other_command', suggestions)
+        self.assertNotIn('variableA', suggestions)
+        self.assertNotIn('variableB', suggestions)
 
 
 if __name__ == '__main__':

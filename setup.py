@@ -11,5 +11,5 @@ setup(
     scripts=['bin/lamedh'],
     package_data={'': ['help.txt']},
     include_package_data=True,
-    install_requires=['lark==1.1.9'],
+    install_requires=['lark==1.1.9', 'prompt_toolkit==3.0.47'],
 )
