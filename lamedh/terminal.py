@@ -12,7 +12,7 @@ from lamedh.visitors import SubstituteVisitor
 
 COMMANDS = {"?": "shows help", "exit": "quit and exit"}
 
-OPPERATION_NAMES = ["some_operation", "other_operation"]
+OPERATION_NAMES = ["some_operation", "other_operation"]
 
 
 histfile = os.path.join(os.path.expanduser("~"), ".lamedh_history")
@@ -77,7 +77,7 @@ class Terminal:
         return self.formatters.get(name, default)
 
     def autocomplete_prompt(self):
-        completer = PromptCompleter(COMMANDS, OPPERATION_NAMES, self.memory)
+        completer = PromptCompleter(COMMANDS, OPERATION_NAMES, self.memory)
         return prompt(self.PS1, completer=completer, complete_while_typing=True)
 
     def main(self):
