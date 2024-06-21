@@ -58,7 +58,6 @@ class PromptCompleter(Completer):
 
 
 class Terminal:
-    PS1 = "λh> "
     OUT = "OUT: "
     DEFAULT_NAME = '_'
     HIDDEN_NAMES = [DEFAULT_NAME, 'FORMAT']
@@ -120,7 +119,7 @@ class Terminal:
 
     def autocomplete_prompt(self):
         return session.prompt(
-            self.PS1, completer=self.completer, complete_while_typing=True, auto_suggest=AutoSuggestFromHistory()
+            self.formatter.PS1, completer=self.completer, complete_while_typing=True, auto_suggest=AutoSuggestFromHistory()
         )
 
     def main(self):
@@ -256,6 +255,7 @@ class Terminal:
 
 
 class NormalFormatter:
+    PS1 = "λh> "
     indent = '|  '
 
     def __call__(self, expr):
