@@ -73,7 +73,6 @@ class Terminal:
                 filename = cmd[5:].strip()
                 self.process_file(filename)
             elif (cmd.startswith("del") or cmd.startswith("delete")) and '=' not in cmd:
-                #print('aca')
                 name_to_del = cmd.split()[1:]
                 self.del_name(name_to_del)
             else:
