@@ -36,7 +36,7 @@ class Terminal:
     OUT = "OUT: "
     DEFAULT_NAME = '_'
     HIDDEN_NAMES = [DEFAULT_NAME, 'FORMAT']
-    RESERVED_NAMES = ['?', 'exit', 'quit', 'dump', 'load']
+    RESERVED_NAMES = ['?', 'exit', 'quit', 'dump', 'load', 'del', 'delete']
 
     def __init__(self):
         self.memory = {}
@@ -72,6 +72,10 @@ class Terminal:
             elif cmd.startswith("load ") and '=' not in cmd:  # load <filename>
                 filename = cmd[5:].strip()
                 self.process_file(filename)
+            elif (cmd.startswith("del") or cmd.startswith("delete")) and '=' not in cmd:
+                #print('aca')
+                name_to_del = cmd.split()[1:]
+                self.del_name(name_to_del)
             else:
                 if not cmd:
                     continue
@@ -216,8 +220,19 @@ class Terminal:
     def greetings(self):
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
         print("Type ? for help.")
-
-
+    
+    def del_name(self, name_to_del):
+        if not name_to_del:
+            print("Missing names to delete")
+        else:
+            for item in name_to_del:
+                if item in self.memory:
+                    del self.memory[item]
+                    print("{} was deleted".format(item))
+                else:
+                    print("{} did not exists".format(item))
+    
+    
 class NormalFormatter:
     indent = '|  '
 
