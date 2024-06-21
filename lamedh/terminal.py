@@ -10,7 +10,8 @@ from prompt_toolkit.history import FileHistory
 from lamedh.expr import Expr
 from lamedh.visitors import SubstituteVisitor
 
-# mapping of command-name: command function to call
+# Commands are instructions that users give to the Terminal
+#    this dict defines 'command-name': 'function-to-call'
 COMMANDS = {
     '?': 'help',
     'help': 'help',
@@ -22,7 +23,9 @@ COMMANDS = {
     'delete': 'del_name',
 }
 
-OPERATION_NAMES = ["some_operation", "other_operation"]
+# Operations are (as the name says) actions that user want to be applied to a given
+# Lambda expression. Like evaluate, display, etc
+OPERATIONS = ['show', 'as_tree', 'goto_normal_form', 'evalN', 'evalE']
 
 
 histfile = os.path.join(os.path.expanduser("~"), ".lamedh_history")
@@ -70,7 +73,7 @@ class Terminal:
             'pretty': PrettyFormatter(),
             'clean': CleanFormatter()
         }
-        self.completer = PromptCompleter(COMMANDS, OPERATION_NAMES, self.memory)
+        self.completer = PromptCompleter(COMMANDS, OPERATIONS, self.memory)
 
     def help(self, arguments_string):
         print(HELP)
@@ -206,37 +209,41 @@ class Terminal:
             return
         stored_expr = self.memory[var]
 
-        if operation == 'show()' or operation == 'show':
+        argument = ''
+        if '(' in operation:
+            # arguments provided to operation.
+            operation, argument = operation.split('(', 1)
+            argument = argument.strip('() ')
+
+        if operation not in OPERATIONS:
+            print("Error: unknown operation: '%s' Type '?' for help" % operation)
+            return
+
+        if operation == 'show':
             print(self.OUT, self.formatter(stored_expr))
-        elif operation == 'as_tree()' or operation == 'as_tree':
+        elif operation == 'as_tree':
             print(self.OUT, self.formatter.as_tree(repr(stored_expr)))
         else:
-            for prefix in ['evalE', 'evalN', 'goto_normal_form']:
-                if operation.startswith(prefix):
-                    # option a, ends in "()", option b, ends in "(<number>)"
-                    func = getattr(stored_expr, prefix)
-                    if operation == prefix or operation == prefix+'()':
-                        max_steps = DEFAULT_NUMBER_OF_STEPS
-                    elif operation.endswith(')'):
-                        number_str = operation[len(prefix)+1:-1]
-                        try:
-                            max_steps = int(number_str)
-                        except ValueError:
-                            max_steps = None
-                    if not max_steps:
-                        print("Error: unknown operation: '%s' Type '?' for help" % operation)
-                    # Let's execute the operation
-                    print(self.OUT)
-                    try:
-                        new_expr = func(max_steps=max_steps, verbose=1, formatter=self.formatter)
-                    except Exception as e:
-                        print("Error occured when running operation '%s':" % prefix)
-                        print("  %s: %s" % (type(e).__name__, e))
-                        return
-                    print(self.OUT, self.formatter(new_expr))
-                    self.memory[new_name] = new_expr
+            max_steps = DEFAULT_NUMBER_OF_STEPS
+            if argument:
+                # try to parse the custom number of steps provided
+                try:
+                    max_steps = int(argument)
+                except ValueError:
+                    print("Error: bad argument '%s' for operation '%s'. Type '?' for help"
+                           % (operation, argument))
                     return
-            print("Error: unknown operation: '%s' Type '?' for help" % operation)
+
+            print(self.OUT)
+            func = getattr(stored_expr, operation)
+            try:
+                new_expr = func(max_steps=max_steps, verbose=1, formatter=self.formatter)
+            except Exception as e:
+                print("Error occured when running operation '%s':" % operation)
+                print("  %s: %s" % (type(e).__name__, e))
+                return
+            print(self.OUT, self.formatter(new_expr))
+            self.memory[new_name] = new_expr
 
     def greetings(self):
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
