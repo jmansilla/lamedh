@@ -17,7 +17,7 @@ class BaseTestTerminal(unittest.TestCase):
         if 'exit' not in inputs:
             # prevent never ending loop
             inputs = inputs + ['exit']  # avoiding modify received inputs
-        with patch('builtins.input', side_effect=inputs):
+        with patch('lamedh.terminal.prompt', side_effect=inputs):
             self.terminal.main()
         return stdout
 
