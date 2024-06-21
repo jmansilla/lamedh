@@ -21,6 +21,10 @@ Let's you edit the source code and see the changes reflected in the `lamedh` com
 python setup.py develop
 ```
 
+To run tests
+
+`python -m pytest`
+
 ## Usage
 
 To open the interactive `lamedh` console on your terminal, simply type
