@@ -64,7 +64,7 @@ class Terminal:
     OUT = "OUT: "
     DEFAULT_NAME = '_'
     HIDDEN_NAMES = [DEFAULT_NAME, 'FORMAT']
-    RESERVED_NAMES = list(COMMANDS.keys())
+    RESERVED_NAMES = list(COMMANDS.keys()) + list(OPERATIONS)
 
     def __init__(self):
         self.memory = {}
