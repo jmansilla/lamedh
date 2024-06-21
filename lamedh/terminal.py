@@ -1,23 +1,22 @@
-import atexit
 import os
 import re
-import readline
 import sys
+
+from prompt_toolkit import PromptSession
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.completion import Completer, FuzzyWordCompleter
+from prompt_toolkit.history import FileHistory
 
 from lamedh.expr import Expr
 from lamedh.visitors import SubstituteVisitor
 
+COMMANDS = {"?": "shows help", "exit": "quit and exit"}
+
+OPERATION_NAMES = ["some_operation", "other_operation"]
+
 
 histfile = os.path.join(os.path.expanduser("~"), ".lamedh_history")
-try:
-    readline.read_history_file(histfile)
-    # default history len is -1 (infinite), which may grow unruly
-    readline.set_history_length(1000)
-except FileNotFoundError:
-    pass
-
-atexit.register(readline.write_history_file, histfile)
-
+session = PromptSession(history=FileHistory(histfile))
 
 
 def clean_split(txt, delimiter):
@@ -29,6 +28,23 @@ __location__ = os.path.realpath(
 DEFAULT_NUMBER_OF_STEPS = 25
 HELP = open(os.path.join(__location__, 'help.txt')).read()
 HELP = HELP % DEFAULT_NUMBER_OF_STEPS
+
+
+class PromptCompleter(Completer):
+    COMMAND_SEPARATOR = "-> "
+    def __init__(self, commands, operations, memory):
+        self.commands = commands
+        self.operations = operations
+        self.memory = memory
+
+    def get_completions(self, document, complete_event):
+        if self.COMMAND_SEPARATOR in document.text:
+            autocomplete_words = self.operations
+        else:
+            autocomplete_words = list(self.memory) + list(self.commands)
+            autocomplete_words.append(self.COMMAND_SEPARATOR)
+
+        return FuzzyWordCompleter(autocomplete_words).get_completions(document, complete_event)
 
 
 class Terminal:
@@ -45,6 +61,7 @@ class Terminal:
             'pretty': PrettyFormatter(),
             'clean': CleanFormatter()
         }
+        self.completer = PromptCompleter(COMMANDS, OPERATION_NAMES, self.memory)
 
     @property
     def formatter(self):
@@ -52,11 +69,16 @@ class Terminal:
         name = str(self.memory.get('FORMAT', None))
         return self.formatters.get(name, default)
 
+    def autocomplete_prompt(self):
+        return session.prompt(
+            self.PS1, completer=self.completer, complete_while_typing=True, auto_suggest=AutoSuggestFromHistory()
+        )
+
     def main(self):
         self.greetings()
         while True:
             try:
-                cmd = input(self.PS1)
+                cmd = self.autocomplete_prompt()
             except EOFError:
                 print('\nBye!')
                 break
