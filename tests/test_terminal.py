@@ -158,6 +158,7 @@ class TestTerminalMemory(BaseTestTerminal):
         stdout = self.call_main(['del'])
         self.assertIn('Missing names', self.last_line(stdout))
 
+
 class TestPromptCompleter(unittest.TestCase):
     COMMANDS = {'some_command': 'command description', 'other_command': 'other description'}
     OPERATIONS = ['some_operation', 'other_operation']
@@ -285,6 +286,14 @@ class TestOperationsToExpressions(BaseTestTerminal):
         self.assertIn('Error:', output)
         self.assertIn(not_a_number, output)
 
+class TestUnnamedExpression(BaseTestTerminal):
+    
+    def test_eval_unnamed_expression(self):
+        expr = '(λx.x)'
+        self.assertEqual(len(self.terminal.memory),1)
+        self.call_main(['%s -> goto_normal_form' % expr])
+        self.assertEqual(len(self.terminal.memory),2)
+        self.assertIn("_", self.terminal.memory)
 
 if __name__ == '__main__':
     unittest.main()

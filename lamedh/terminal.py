@@ -147,21 +147,31 @@ class Terminal:
             else:
                 self.process_line(line)
 
-    def add_definition(self, new_name, expr):
+    def add_definition(self, new_name, raw_expr):
         if new_name in self.RESERVED_NAMES:
             print("Error: name '%s' is reserved" % new_name)
             return
-        if expr in self.memory:
+        if raw_expr in self.memory:
             # actually "expr" is a name in memory and not an expression
             if new_name != self.DEFAULT_NAME:
                 # creating a new name for existing expression
-                self.memory[new_name] = self.memory[expr]
+                self.memory[new_name] = self.memory[raw_expr]
             else:
                 # invoking print for existing expression
-                print(self.OUT, self.formatter(self.memory[expr]))
+                print(self.OUT, self.formatter(self.memory[raw_expr]))
         else:
             # creating a new expression, and saving it as new_name
-            self.parse_expr(new_name, expr)
+            parsed = self.parse_expr(raw_expr)
+            if not parsed:
+                return
+
+            msg = 'new expression parsed:'
+            if new_name != self.DEFAULT_NAME:
+                msg += ' %s = %s' % (new_name, self.formatter(parsed))
+            else:
+                msg += ' %s' % self.formatter(parsed)
+            print(msg)
+            self.memory[new_name] = parsed
 
     def process_line(self, line):
         # One of 2 options:
@@ -182,32 +192,25 @@ class Terminal:
         else:
             self.add_definition(new_name, raw_expr)
 
-    def parse_expr(self, new_name, raw_expr):
+    def parse_expr(self, raw_expr):
         try:
             parsed = Expr.from_string(raw_expr)
             mapping = {k: v.clone() for k, v in self.memory.items() if k not in self.HIDDEN_NAMES}
             parsed = SubstituteVisitor().visit(parsed, mapping)
+            return parsed
         except Exception as e:
             print("Parsing Lambda Expr Error: %s" % e)
-            return
-        msg = 'new expression parsed:'
-        if new_name != self.DEFAULT_NAME:
-            msg += ' %s = %s' % (new_name, self.formatter(parsed))
-        else:
-            msg += ' %s' % self.formatter(parsed)
-        print(msg)
-        self.memory[new_name] = parsed
 
     def process_operation(self, new_name, raw_expr):
-        var, operation = clean_split(raw_expr, '->')
+        operand_expr, operation = clean_split(raw_expr, '->')
+
         if '->' in operation:
             print("Error: operation can't have more than one '->'")
             return
-        var = var.strip()
-        if var not in self.memory:
-            print("Error: unknown expression: '%s'" % var)
-            return
-        stored_expr = self.memory[var]
+
+        var = operand_expr.strip()
+
+        stored_expr = self.memory[var] if var in self.memory else self.parse_expr(operand_expr)
 
         argument = ''
         if '(' in operation:
@@ -238,12 +241,11 @@ class Terminal:
             func = getattr(stored_expr, operation)
             try:
                 new_expr = func(max_steps=max_steps, verbose=1, formatter=self.formatter)
+                print(self.OUT, self.formatter(new_expr))
+                self.memory[new_name] = new_expr
             except Exception as e:
                 print("Error occured when running operation '%s':" % operation)
                 print("  %s: %s" % (type(e).__name__, e))
-                return
-            print(self.OUT, self.formatter(new_expr))
-            self.memory[new_name] = new_expr
 
     def greetings(self):
         print("Greetings. This is the λ-Lamedh Calculus Terminal.")
