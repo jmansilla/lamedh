@@ -42,6 +42,8 @@ class FreeVarVisitor(BaseVisitor):
         set_a, set_b = visited_children
         return copy(set_a).union(set_b)
 
+    def generic_visit(self, expr, *args, **kwargs):
+        return set()
 
 class BoundVarVisitor(BaseVisitor):
     provide_initializer_node = True
@@ -88,7 +90,7 @@ class SubstituteVisitor(BaseVisitor):
         # check if this lambda is binding stronger the variable that we want to substitute
         if not initializer:
             if expr.var_name in substitution_map:
-                new_map = {k:v.clone() for k,v in substitution_map.items() if k != expr.var_name}
+                new_map = {k: v.clone() for k,v in substitution_map.items() if k != expr.var_name}
                 substitution_map = new_map
 
         if not substitution_map:
@@ -115,6 +117,10 @@ class SubstituteVisitor(BaseVisitor):
         new_body = self.visit(expr.body, substitution_map)
         Lam_ = expr.__class__
         return Lam_(expr.var_name, new_body)
+
+    def generic_visit(self, expr, *args, **kwargs):
+        return expr
+
 
 class EvalVisitor(BaseVisitor):
     provide_children = False
