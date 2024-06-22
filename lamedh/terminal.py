@@ -151,27 +151,19 @@ class Terminal:
         if new_name in self.RESERVED_NAMES:
             print("Error: name '%s' is reserved" % new_name)
             return
-        if raw_expr in self.memory:
-            # actually "expr" is a name in memory and not an expression
-            if new_name != self.DEFAULT_NAME:
-                # creating a new name for existing expression
-                self.memory[new_name] = self.memory[raw_expr]
-            else:
-                # invoking print for existing expression
-                print(self.OUT, self.formatter(self.memory[raw_expr]))
-        else:
-            # creating a new expression, and saving it as new_name
-            parsed = self.parse_expr(raw_expr)
-            if not parsed:
-                return
 
-            msg = 'new expression parsed:'
-            if new_name != self.DEFAULT_NAME:
-                msg += ' %s = %s' % (new_name, self.formatter(parsed))
-            else:
-                msg += ' %s' % self.formatter(parsed)
-            print(msg)
-            self.memory[new_name] = parsed
+        # creating a new expression, and saving it as new_name
+        parsed = self.parse_expr(raw_expr)
+        if not parsed:
+            return
+
+        msg = 'new expression parsed:'
+        if new_name != self.DEFAULT_NAME:
+            msg += ' %s = %s' % (new_name, self.formatter(parsed))
+        else:
+            msg += ' %s' % self.formatter(parsed)
+        print(msg)
+        self.memory[new_name] = parsed
 
     def process_line(self, line):
         # One of 2 options:
@@ -189,6 +181,8 @@ class Terminal:
         raw_expr = raw_expr.strip()
         if '->' in raw_expr:
             self.process_operation(new_name, raw_expr)
+        elif new_name == self.DEFAULT_NAME and raw_expr in self.memory:
+            print(self.OUT, self.formatter(self.memory[raw_expr]))
         else:
             self.add_definition(new_name, raw_expr)
 
