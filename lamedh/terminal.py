@@ -190,8 +190,9 @@ class Terminal:
         try:
             parsed = Expr.from_string(raw_expr)
             free = parsed.get_free_vars()
+            free_names = [expr.var_name for expr in free]
             mapping = {k: v.clone() for k, v in self.memory.items()
-                        if k in free and k not in self.HIDDEN_NAMES}
+                        if k in free_names and k not in self.HIDDEN_NAMES}
             parsed = SubstituteVisitor().visit(parsed, mapping)
             return parsed
         except Exception as e:

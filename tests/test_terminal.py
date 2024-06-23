@@ -56,6 +56,13 @@ class TestTerminalParsing(BaseTestTerminal):
         self.assertEqual(mock.call_count, 1)
         self.assertEqual(mock.call_args[0][0], expr)
 
+    def test_parse_expression_replaces_free_vars_with_expressions_on_memory(self):
+        self.call_main([f'a = (λx.x)'])
+        self.call_main([f'b = (λy.y)'])
+        self.call_main([f'c = a b'])
+        c_expr = self.terminal.memory['c']
+        self.assertEqual(str(c_expr), '((λx.x) (λy.y))', )
+
 
 class TestTerminalHelp(BaseTestTerminal):
 
@@ -287,7 +294,7 @@ class TestOperationsToExpressions(BaseTestTerminal):
         self.assertIn(not_a_number, output)
 
 class TestUnnamedExpression(BaseTestTerminal):
-    
+
     def test_eval_unnamed_expression(self):
         expr = '(λx.x)'
         self.assertEqual(len(self.terminal.memory),1)
